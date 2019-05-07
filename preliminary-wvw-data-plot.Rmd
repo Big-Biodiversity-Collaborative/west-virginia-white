@@ -1,0 +1,71 @@
+---
+title: "West Virginia White"
+author: "Jeff Oliver"
+date: "May 3, 2019"
+output: pdf_document
+---
+
+**DON'T USE UNTIL BUG FIXED**
+https://community.rstudio.com/t/rstudio-crash-fatal-error-link-to-rstudio-executesafely-and-jenkins/29945
+https://github.com/rstudio/rstudio/issues/4723
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+suppressPackageStartupMessages(library(lubridate))
+suppressPackageStartupMessages(library(ggplot2))
+```
+
+## Preliminary analyses
+
+"Preliminary"" does not do it justice. This is very, very back of the envelope. Data are from iNaturalist observations downloaded on 2 May 2019.
+
+```{r load-prepare-data}
+# Read in iNaturalist observations
+# West Virginia White
+wvw <- read.csv(file = "data/observations-52593.csv")
+# Mustard White
+mw <- read.csv(file = "data/observations-52726.csv")
+# Cabbage White
+cw <- read.csv(file = "data/observations-52729.csv")
+# Exclude any cabbage white observations beyond the western limit of WVW & MW
+# observations
+cw <- cw[cw$longitude >= min(wvw$longitude, mw$longitude), ]
+# Put 'em together
+obs <- rbind(wvw, mw)
+
+wvw$observed_on <- as.Date(Iwvw$observed_on)
+
+# Extract year and day of year
+wvw$year <- year(wvw$observed_on)
+wvw$yday <- as.POSIXlt(wvw$observed_on)$yday
+
+# Remove observations for 2019 and before 2005
+wvw.2005.2018 <- wvw[wvw$year >= 2005 & wvw$year < 2019, ]
+```
+
+Exluding a single observation from 1997 and observations from 2019, there are `r nrow(wvw.2005.2019)` observations. If we plot these by year and day of year, it is a bit tough to see much of a trend:
+
+```{r plot-data}
+# Plot observations for each year separately
+obs.plot <- ggplot(data = wvw.2005.2018, mapping = aes(x = year, y = yday, color = latitude)) +
+  geom_point() +
+  geom_smooth() +
+  xlab(label = "Year") +
+  ylab(label = "Day") +
+  ggtitle("P. virginiensis 2005-2018")
+print(obs.plot)
+```
+
+Note that observations from lower latitudes (darker points) are generally towards the bottom of the plot, and observations from more northern latitudes (lighter points) are nearer the top of the plot. No big surprise there, but a source of variation that should be accounted for.
+
+
+Considering this in a very crude linear model:
+$$
+Observation \enspace day_i = Year_i + Latitude_i + \epsilon_i
+$$
+There is a significant effect of latitude. Again, no surprise. But there is an oh so _slight_ suggestion of a negative effect of year. 
+```{r linear-model}
+# Do a quick linear regression, including latitude as crude co-variate
+date.lat.lm <- lm(yday ~ year + latitude, data = wvw.2005.2018)
+date.lat.summary <- summary(date.lat.lm)
+```
