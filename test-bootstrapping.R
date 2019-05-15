@@ -32,7 +32,7 @@ obs.plot <- ggplot(data = wvw.2005.2018, mapping = aes(x = year, y = yday, color
   ggtitle("Observations 2005-2018") +
   scale_color_continuous(name = "Latitude") +
   theme_bw()
-print(obs.plot)
+suppressMessages(expr = print(obs.plot))
 
 # Plot _only_ minimums
 wvw.mins <- wvw.2005.2018 %>%
@@ -47,17 +47,17 @@ min.plot <- ggplot(data = wvw.mins, mapping = aes(x = year, y = early)) +
   ylab(label = "Day") +
   ggtitle("Earliest observations 2005-2018") + 
   theme_bw()
-print(min.plot)
+suppressMessages(expr = print(min.plot))
 
-########################################
+################################################################################
 # Look at bootstrapping for earliest date
 # General idea:
 # Interest in butterfly watching has increased with time, so if we observe 
 # earlier emergence dates through time, it could be due to climate change, but 
 # it could also just be a sampling artifact.
-# Measure the potential for this artifact by testing for a earlier emergence 
-# time when bootstrapping from the most recent year's data to re-create the 
-# sampling efforts for each previous year
+# Test to see if bootstrapping with avoid this artifact by bootstrapping from 
+# the most recent year's data to re-create the sampling efforts for each 
+# previous year
 # Process: Create vector of observations from most recent year, `sample.from`, 
 # this will be the distribution to sample from. For each year that is included, 
 # draw some number of samples, `sample.size`, from `sample.from`. For each year,
@@ -85,16 +85,7 @@ for (r in 1:bootstrap.reps) {
                                                                size = sample.size,
                                                                replace = FALSE)
   }
-  
-  # bs.plot <- ggplot(data = bootstrapped.df, mapping = aes(x = year, y = yday)) +
-  #   geom_point() +
-  #   geom_smooth() +
-  #   xlab(label = "Year") +
-  #   ylab(label = "Day") +
-  #   ggtitle("Bootstrapped samples") +
-  #   theme_bw()
-  # print(bs.plot)
-  
+
   bs.mins <- bootstrapped.df %>%
     group_by(year) %>%
     summarise(early = min(yday))
@@ -110,14 +101,67 @@ estimate.plot <- ggplot(data = bs.results, mapping = aes(x = estimate)) +
   geom_histogram() +
   geom_vline(xintercept = 0) +
   theme_bw()
-print(estimate.plot)
+suppressMessages(expr = print(estimate.plot))
 
 # P-values
 p.value.plot <- ggplot(data = bs.results, mapping = aes(x = p.value)) +
   geom_histogram() +
   geom_vline(xintercept = 0.05, color = "#FF0000") +
   theme_bw()
-print(p.value.plot)
+suppressMessages(expr = print(p.value.plot))
+
+################################################################################
+# Explicitly testing for artifact effect
+# Measure the potential for this artifact by testing for a earlier emergence 
+# time when bootstrapping from the most recent year's data to re-create the 
+# sampling efforts for each previous year
+# Process: Create vector of observations from most recent year, `sample.from`, 
+# this will be the distribution to sample from. For each year that is included, 
+# draw the a number of samples that corresponds to actual number of samples 
+# per year, calculate the minimum, and test for an effect. _Should_ see lower 
+# minimums in more recent years, due to larger sample sizes.
+
+# Set up number of reps and distribution to sample from
+bootstrap.reps <- 1000
+sample.from <- wvw.2005.2018$yday[wvw.2005.2018$year == 2018]
+include.years <- wvw.mins$year[wvw.mins$n.obs >= minimum.required]
+wvw.for.bs <- wvw.2005.2018[wvw.2005.2018$year %in% include.years, ]
+
+# Replicate process of sampling and linear regression
+bs.results <- data.frame(replicate = 1:bootstrap.reps,
+                         estimate = NA,
+                         p.value = NA)
+
+for (r in 1:bootstrap.reps) {
+  # Erase values in yday; these will be replaced via bootstrap sampling
+  wvw.for.bs$yday <- NA
+  # Should be a tidyverse way of doing this...
+  for (y in unique(wvw.for.bs$year)) {
+    num.obs <- sum(wvw.for.bs$year == y)
+    wvw.for.bs$yday[wvw.for.bs$year == y] <- sample(x = sample.from, size = num.obs)
+  }
+  bs.mins <- wvw.for.bs %>%
+    group_by(year) %>%
+    summarise(early = min(yday))
+  
+  suppressMessages(expr = bs.lm <- lm(early ~ year, data = bs.mins))
+  bs.results$estimate[r] <- summary(bs.lm)$coefficients[2, 1]
+  bs.results$p.value[r] <- summary(bs.lm)$coefficients[2, 4]
+}
+
+# Plot results of bootstrapping
+# Coefficient estimates
+estimate.plot <- ggplot(data = bs.results, mapping = aes(x = estimate)) +
+  geom_histogram() +
+  geom_vline(xintercept = 0, color = "#FF0000") +
+  theme_bw()
+suppressMessages(expr = print(estimate.plot))
+# P-values
+p.value.plot <- ggplot(data = bs.results, mapping = aes(x = p.value)) +
+  geom_histogram() +
+  geom_vline(xintercept = 0.05, color = "#FF0000") +
+  theme_bw()
+suppressMessages(expr = print(p.value.plot))
 
 ########################################
 # Now need to do reciprocal test, where there **is** an effect of time on 
