@@ -1,16 +1,23 @@
 ---
 title: "West Virginia White"
 author: "Jeff Oliver"
-date: "May 3, 2019"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: pdf_document
 ---
 
-**DON'T USE UNTIL BUG FIXED**
+<!--
+knitting document works fine, but running individual chunks freezes R (and 
+often entire OS) and repeats: ERROR: option error has NULL value
+DO NOT USE UNTIL FIXED
+https://community.rstudio.com/t/error-on-version-3-6-on-mac/30731
 https://community.rstudio.com/t/rstudio-crash-fatal-error-link-to-rstudio-executesafely-and-jenkins/29945
 https://github.com/rstudio/rstudio/issues/4723
+-->
+
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
+suppressPackageStartupMessages(library(tidyverse))
 suppressPackageStartupMessages(library(lubridate))
 suppressPackageStartupMessages(library(ggplot2))
 ```
@@ -25,15 +32,9 @@ suppressPackageStartupMessages(library(ggplot2))
 wvw <- read.csv(file = "data/observations-52593.csv")
 # Mustard White
 mw <- read.csv(file = "data/observations-52726.csv")
-# Cabbage White
-cw <- read.csv(file = "data/observations-52729.csv")
-# Exclude any cabbage white observations beyond the western limit of WVW & MW
-# observations
-cw <- cw[cw$longitude >= min(wvw$longitude, mw$longitude), ]
-# Put 'em together
 obs <- rbind(wvw, mw)
 
-wvw$observed_on <- as.Date(Iwvw$observed_on)
+wvw$observed_on <- as.Date(wvw$observed_on)
 
 # Extract year and day of year
 wvw$year <- year(wvw$observed_on)
@@ -43,7 +44,7 @@ wvw$yday <- as.POSIXlt(wvw$observed_on)$yday
 wvw.2005.2018 <- wvw[wvw$year >= 2005 & wvw$year < 2019, ]
 ```
 
-Exluding a single observation from 1997 and observations from 2019, there are `r nrow(wvw.2005.2019)` observations. If we plot these by year and day of year, it is a bit tough to see much of a trend:
+Exluding a single observation from 1997 and observations from 2019, there are `r nrow(wvw.2005.2018)` observations. If we plot these by year and day of year, it is a bit tough to see much of a trend:
 
 ```{r plot-data}
 # Plot observations for each year separately
@@ -53,19 +54,203 @@ obs.plot <- ggplot(data = wvw.2005.2018, mapping = aes(x = year, y = yday, color
   xlab(label = "Year") +
   ylab(label = "Day") +
   ggtitle("P. virginiensis 2005-2018")
-print(obs.plot)
+suppressMessages(expr = print(obs.plot))
 ```
 
-Note that observations from lower latitudes (darker points) are generally towards the bottom of the plot, and observations from more northern latitudes (lighter points) are nearer the top of the plot. No big surprise there, but a source of variation that should be accounted for.
+Note that observations from lower latitudes (darker points) are generally towards the bottom of the plot, and observations from more northern latitudes (lighter points) are nearer the top of the plot. No big surprise there.
 
+## Earliest emergences
 
-Considering this in a very crude linear model:
+If we only consider the earliest emergences,
+
+```{r plot-minimums}
+# Plot _only_ minimums
+wvw.mins <- wvw.2005.2018 %>%
+  group_by(year) %>%
+  summarise(early = min(yday, na.rm = TRUE),
+            n.obs = n())
+
+min.plot <- ggplot(data = wvw.mins, mapping = aes(x = year, y = early)) +
+  geom_point() +
+  geom_smooth()  +
+  xlab(label = "Year") +
+  ylab(label = "Day") +
+  ggtitle("Earliest observations 2005-2018") + 
+  theme_bw()
+suppressMessages(expr = print(min.plot))
+```
+
+There _is_ a trend towards earlier emergences in more recent years, so let's consider a very crude linear model:
 $$
-Observation \enspace day_i = Year_i + Latitude_i + \epsilon_i
+Earliest \enspace observation \enspace day_i = Year_i + \epsilon_i
 $$
-There is a significant effect of latitude. Again, no surprise. But there is an oh so _slight_ suggestion of a negative effect of year. 
-```{r linear-model}
-# Do a quick linear regression, including latitude as crude co-variate
-date.lat.lm <- lm(yday ~ year + latitude, data = wvw.2005.2018)
-date.lat.summary <- summary(date.lat.lm)
+
+```{r minimums-model}
+# Linear regression 
+early.lm <- lm(early ~ year, data = wvw.mins)
+early.summary <- summary(early.lm)
+year.coeff <- early.summary$coefficients[2, 1]
+year.p <- early.summary$coefficients[2, 4]
+```
+
+There is a very slight effect of year on earliest observation date, with the first earliest observation occuring `r abs(round(year.coeff, digits = 2))` days earlier each year. However, this effect is only marginally significant (p = `r round(year.p, digits = 4)`).
+
+## But...
+
+Given the increase in butterfly watching, this change in observations could be entirely due to sampling artifacts than biological reality. Consider the number of observations of _P. virginiensis_ through time:
+
+```{r wvw-obs-plot}
+wvw.plot <- ggplot(data = wvw.mins, mapping = aes(x = year, y = n.obs)) +
+  geom_point() +
+  geom_smooth()  +
+  xlab(label = "Year") +
+  ylab(label = "Observations") +
+  ggtitle("Number of observations 2005-2018") + 
+  theme_bw()
+suppressMessages(expr = print(wvw.plot))
+```
+
+Pretty clearly increasing. So this means that by chance, recent years are more likely to "catch" earlier observations, just because there are more opportunities. To see this in action, consider a thought experiment where we make up data. Well, bootstrapping data, but it's nearly the same thing. If we create a data set that mimics the observation efforts for the observed data (i.e. `r wvw.mins$n.obs[1]` observations for `r wvw.mins$year[1]`, `r wvw.mins$n.obs[nrow(wvw.mins)]` observations for `r wvw.mins$year[nrow(wvw.mins)]`, etc.), but instead of actual observations, sample only from the most recent year of observations (`r wvw.mins$year[nrow(wvw.mins)]`). We then use those data to run the linear regression again and see if there is an effect. Ideally, if there is _no_ artifact of sampling, we should see, on average, no effect of year on earliest observation (this is because, for these data, _all_ days of observation are being drawn from the "real" data for `r wvw.mins$year[nrow(wvw.mins)]` alone). Repeating this process 1000 times should result, on average, of an effect size of 0:
+
+```{r plot-ideal}
+minimum.required <- 5
+sample.size <- 5
+bootstrap.reps <- 1000
+sample.from <- wvw.2005.2018$yday[wvw.2005.2018$year == 2018]
+include.years <- wvw.mins$year[wvw.mins$n.obs >= minimum.required]
+wvw.for.bs <- wvw.2005.2018[wvw.2005.2018$year %in% include.years, ]
+
+# Replicate process of sampling and linear regression
+bs.results <- data.frame(replicate = 1:bootstrap.reps,
+                         estimate = NA,
+                         p.value = NA)
+for (r in 1:bootstrap.reps) {
+  # Data fram will hold bootstrapped data
+  bootstrapped.df <- data.frame(year = rep(include.years, times = sample.size),
+                                yday = NA)
+  # Fill in data frame with bootstrapped date for each year
+  for (yr in include.years) {
+    bootstrapped.df$yday[bootstrapped.df$year == yr] <- sample(x = sample.from,
+                                                               size = sample.size,
+                                                               replace = FALSE)
+  }
+
+  bs.mins <- bootstrapped.df %>%
+    group_by(year) %>%
+    summarise(early = min(yday))
+  
+  bs.lm <- lm(early ~ year, data = bs.mins)
+  bs.results$estimate[r] <- summary(bs.lm)$coefficients[2, 1]
+  bs.results$p.value[r] <- summary(bs.lm)$coefficients[2, 4]
+}
+
+# Plot results of bootstrapping
+# Coefficient estimates
+estimate.plot <- ggplot(data = bs.results, mapping = aes(x = estimate)) +
+  geom_histogram() +
+  geom_vline(xintercept = 0) +
+  xlab(label = "Effect size (days/year)") +
+  ylab(label = "Count") +
+  ggtitle(label = "Expectation in artifact-free world") +
+  theme_bw()
+suppressMessages(expr = print(estimate.plot))
+```
+
+However, when we do the bootstrapping experiment, it looks like there is considerable potential for an artifact:
+
+```{r demostrate-artifact}
+# Set up number of reps and distribution to sample from
+bootstrap.reps <- 1000
+sample.from <- wvw.2005.2018$yday[wvw.2005.2018$year == 2018]
+include.years <- wvw.mins$year[wvw.mins$n.obs >= minimum.required]
+wvw.for.bs <- wvw.2005.2018[wvw.2005.2018$year %in% include.years, ]
+
+# Replicate process of sampling and linear regression
+bs.results <- data.frame(replicate = 1:bootstrap.reps,
+                         estimate = NA,
+                         p.value = NA)
+
+for (r in 1:bootstrap.reps) {
+  # Erase values in yday; these will be replaced via bootstrap sampling
+  wvw.for.bs$yday <- NA
+  # Should be a tidyverse way of doing this...
+  for (y in unique(wvw.for.bs$year)) {
+    num.obs <- sum(wvw.for.bs$year == y)
+    wvw.for.bs$yday[wvw.for.bs$year == y] <- sample(x = sample.from, size = num.obs)
+  }
+  bs.mins <- wvw.for.bs %>%
+    group_by(year) %>%
+    summarise(early = min(yday))
+  
+  suppressMessages(expr = bs.lm <- lm(early ~ year, data = bs.mins))
+  bs.results$estimate[r] <- summary(bs.lm)$coefficients[2, 1]
+  bs.results$p.value[r] <- summary(bs.lm)$coefficients[2, 4]
+}
+
+# Plot results of bootstrapping
+# Coefficient estimates
+estimate.plot <- ggplot(data = bs.results, mapping = aes(x = estimate)) +
+  geom_histogram() +
+  geom_vline(xintercept = 0, color = "#FF0000") +
+  xlab(label = "Effect size (days/year)") +
+  ylab(label = "Count") +
+  ggtitle(label = "Artifact of increasing sampling effort through time") +
+  theme_bw()
+suppressMessages(expr = print(estimate.plot))
+```
+
+And the mean effect size is observations are getting earlier by `r abs(round(mean(bs.results$estimate, na.rm = TRUE), digits = 2))` days per year. We know this is an artifact because all the data are based on `r wvw.mins$year[nrow(wvw.mins)]`.
+
+## Back to the bootstrap
+
+However, we can use bootstrapping to down-sample observations to make effort across years consistent. That is, for each year, we randomly sample a subset of observations so we only have a certain number of observations per year. For that "certain number", we'll use the number of observations from 2005 (n = `r wvw.mins$n.obs[wvw.mins$year == 2005]`), which is the fewest observations in a single year for these data. Let's test this first by doing the same process we ran before, basing everying on data from `r wvw.mins$year[nrow(wvw.mins)]` alone, but now only drawing `r wvw.mins$n.obs[wvw.mins$year == 2005]` samples for each year. Ideally, we should see no effect of year on earliest observation (i.e. an effect size of 0).
+
+```{r bootstrap-proof-of-concept}
+minimum.required <- 5
+sample.size <- 5
+bootstrap.reps <- 1000
+sample.from <- wvw.2005.2018$yday[wvw.2005.2018$year == 2018]
+include.years <- wvw.mins$year[wvw.mins$n.obs >= minimum.required]
+wvw.for.bs <- wvw.2005.2018[wvw.2005.2018$year %in% include.years, ]
+
+# Replicate process of sampling and linear regression
+bs.results <- data.frame(replicate = 1:bootstrap.reps,
+                         estimate = NA,
+                         p.value = NA)
+for (r in 1:bootstrap.reps) {
+  # Data fram will hold bootstrapped data
+  bootstrapped.df <- data.frame(year = rep(include.years, times = sample.size),
+                                yday = NA)
+  # Fill in data frame with bootstrapped date for each year
+  for (yr in include.years) {
+    bootstrapped.df$yday[bootstrapped.df$year == yr] <- sample(x = sample.from,
+                                                               size = sample.size,
+                                                               replace = FALSE)
+  }
+
+  bs.mins <- bootstrapped.df %>%
+    group_by(year) %>%
+    summarise(early = min(yday))
+  
+  bs.lm <- lm(early ~ year, data = bs.mins)
+  bs.results$estimate[r] <- summary(bs.lm)$coefficients[2, 1]
+  bs.results$p.value[r] <- summary(bs.lm)$coefficients[2, 4]
+}
+
+# Plot results of bootstrapping
+# Coefficient estimates
+estimate.plot <- ggplot(data = bs.results, mapping = aes(x = estimate)) +
+  geom_histogram() +
+  geom_vline(xintercept = 0) +
+  xlab(label = "Effect size (days/year)") +
+  ylab(label = "Count") +
+  ggtitle(label = "Downsampling to avoid artifacts") + 
+  theme_bw()
+suppressMessages(expr = print(estimate.plot))
+```
+
+Woo-hoo! So now we have a way to avoid artifacts due to variation in effort. Let's try it for real, downsampling each years' data to only `r wvw.mins$n.obs[wvw.mins$year == 2005]` per year.
+
+```{r downsample-and-test}
+
 ```
