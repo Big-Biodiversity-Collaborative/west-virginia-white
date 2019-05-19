@@ -6,7 +6,7 @@
 rm(list = ls())
 
 ################################################################################
-# Want to avoid Papilio rumiko disaster
+# Want to avoid Papilio rumiko / rumina disaster
 # Definitely bad georefs in GBIF data; iNaturalist is OK
 # See file read-in code (ca. line 28) for filtering option
 library(ggplot2)
@@ -23,23 +23,24 @@ plot.iNaturalist <- FALSE
 if (plot.iNaturalist) {
   plot.data <- read.csv(file = "data/observations-52593.csv")
   latlongs <- unique(plot.data[, c("longitude", "latitude")])
+  colnames(latlongs) <- c("Longitude", "Latitude")
 } else {
   plot.data <- read.delim(file = "data/0015022-190415153152247.csv")
   plot.data <- plot.data[plot.data$decimalLatitude > 29, ]
   plot.data <- plot.data[plot.data$decimalLongitude > -100, ]
   latlongs <- unique(plot.data[, c("decimalLongitude", "decimalLatitude", "eventDate")])
+  colnames(latlongs) <- c("Longitude", "Latitude", "Date")
 }
 
 # Drop duplicates and missing data
 latlongs <- na.omit(latlongs)
-colnames(latlongs) <- c("Longitude", "Latitude")
 
 map.bounds <- c(floor(min(c(latlongs$Longitude))),
                 floor(min(c(latlongs$Latitude))),
                 ceiling(max(c(latlongs$Longitude))),
                 ceiling(max(c(latlongs$Latitude))))
 
-# Get a map image (increasing timeout time for slow connections)
+# Get a map image
 # Have to provide min/max for lat and long, otherwise will assume Google map,
 # which requires API key
 wvw.map <- get_map(location = map.bounds,
@@ -55,7 +56,8 @@ if (plot.iNaturalist) {
 
 wvw.obs.map <- ggmap(ggmap = wvw.map) +
   geom_point(data = latlongs,
-             mapping = aes(x = Longitude, y = Latitude)) +
+             mapping = aes(x = Longitude, y = Latitude),
+             size = 1.0) +
   theme_bw() +
   ggtitle(label = maptitle)
 print(wvw.obs.map)
