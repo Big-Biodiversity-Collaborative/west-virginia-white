@@ -9,6 +9,7 @@ rm(list = ls())
 # Want to avoid Papilio rumiko / rumina disaster
 # Definitely bad georefs in GBIF data; iNaturalist is OK
 # See file read-in code (ca. line 28) for filtering option
+# Note additional filtering on dates in GBIF data is warranted (01-Jan-1700)
 library(ggplot2)
 library(ggmap)
 # Set timeout limit higher for slower connections

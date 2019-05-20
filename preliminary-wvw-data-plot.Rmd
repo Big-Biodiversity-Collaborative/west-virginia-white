@@ -5,6 +5,10 @@ date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: pdf_document
 ---
 
+<!--
+TODO: Need to consider sampling only a portion for each year.
+-->
+
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 suppressPackageStartupMessages(library(tidyverse))

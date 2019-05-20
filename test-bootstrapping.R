@@ -95,6 +95,51 @@ for (r in 1:bootstrap.reps) {
   bs.results$p.value[r] <- summary(bs.lm)$coefficients[2, 4]
 }
 
+# Trying a parallel approach to bootstrapping
+library(parallel)
+
+# Ultimately, returning a vector of two elements
+# the coefficient estimate and the p
+
+# Example
+library(parallel)
+# Calculate the number of cores
+num.cores <- detectCores() - 1
+comp.cluster <- makeCluster(num.cores)
+
+# Establish sampling design parameters
+minimum.required <- 5
+sample.size <- minimum.required
+bootstrap.reps <- 10
+
+sample.from <- wvw.2005.2018$yday[wvw.2005.2018$year == 2018]
+include.years <- wvw.mins$year[wvw.mins$n.obs >= minimum.required]
+
+# Example
+no_cores <- detectCores() - 1
+# Initiate cluster
+cl <- makeCluster(no_cores)
+mydf <- data.frame(x = c(1:10),
+                   y = c(1:10) + rnorm(n = 10))
+num.reps <- c(1:10)
+exponent <- parLapply(cl = cl, 
+                      # simplify = FALSE,
+                      X = num.reps, # This vector ends up being first argument of FUN
+                      fun = function(i, df) {
+                        data.x <- sample(x = df[, "x"], size = 5)
+                        data.y <- sample(x = df[, "y"], size = 5)
+                        df.lm <- lm(data.y ~ data.x)
+                        coeff.est <- summary(df.lm)$coefficients[2, 1]
+                        p.value <- summary(df.lm)$coefficients[2, 4]
+                        return(data.frame(bs.rep = i,
+                                    estimate = coeff.est,
+                                    p.value = p.value))
+                      },
+                      df = mydf)
+stopCluster(cl)
+rm(cl)
+exponent.df <- do.call(rbind, exponent)
+
 # Plot results of bootstrapping
 # Coefficient estimates
 estimate.plot <- ggplot(data = bs.results, mapping = aes(x = estimate)) +
