@@ -14,11 +14,13 @@ knitr::opts_chunk$set(echo = FALSE)
 suppressPackageStartupMessages(library(tidyverse))
 suppressPackageStartupMessages(library(lubridate))
 suppressPackageStartupMessages(library(ggplot2))
+suppressPackageStartupMessages(library(gridExtra))
+suppressPackageStartupMessages(library(parallel))
 
 # Establish bootstrap and sampling values
 minimum.required <- 5
 sample.size <- minimum.required
-num.bs.reps <- 1000
+num.bs.reps <- 100
 ```
 
 ## Preliminary analyses
@@ -60,7 +62,7 @@ wvw <- wvw[wvw$year != year(today()), ]
 wvw <- unique(wvw)
 ```
 
-After dropping some unrealistic GBIF observations (some from the Indian Ocean some from January 1) and those from `r year(today())`, there are `r nrow(wvw)` observations. If we plot these by year and day of year, it looks like recently there may have been a shift to earlier emergences:
+After dropping some unrealistic GBIF observations (some from the Indian Ocean some from January 1) and those from `r year(today())`, there are `r nrow(wvw)` observations. If we plot these by year and day of year, it looks like recently there may have been a shift to earlier emergences.
 
 ```{r plot-data}
 # Plot observations for each year separately
@@ -68,18 +70,12 @@ obs.plot <- ggplot(data = wvw, mapping = aes(x = year, y = yday, color = latitud
   geom_point() +
   geom_smooth() +
   xlab(label = "Year") +
+  scale_color_gradient(name = "Latitude") +
   ylab(label = "Day") +
-  ggtitle("P. virginiensis")
-suppressMessages(expr = print(obs.plot))
-```
+  theme_bw() +
+  theme(legend.position = c(0.15, 0.75)) +
+  ggtitle("P. virginiensis observations")
 
-Note that observations from lower latitudes (darker points) are generally towards the bottom of the plot, and observations from more northern latitudes (lighter points) are nearer the top of the plot. No big surprise there.
-
-## Earliest emergences
-
-If we only consider the earliest emergences,
-
-```{r plot-minimums}
 # Plot _only_ minimums
 wvw.mins <- wvw %>%
   group_by(year) %>%
@@ -96,8 +92,12 @@ min.plot <- ggplot(data = wvw.mins, mapping = aes(x = year, y = early)) +
   ylab(label = "Day") +
   ggtitle(min.plot.title) + 
   theme_bw()
-suppressMessages(expr = print(min.plot))
+
+# Plot the two plots, suppressing the smoothing message that prints out
+suppressMessages(expr = grid.arrange(obs.plot, min.plot, nrow = 1))
 ```
+
+Note that observations from lower latitudes (darker points) are generally towards the bottom of the plot, and observations from more northern latitudes (lighter points) are nearer the top of the plot. No big surprise there.
 
 There _is_ a trend towards earlier emergences in more recent years, so let's consider a very crude linear model:
 $$
@@ -112,13 +112,13 @@ year.coeff <- early.summary$coefficients[2, 1]
 year.p <- early.summary$coefficients[2, 4]
 ```
 
-There is an effect of year on earliest observation date, with the first earliest observation occuring `r abs(round(year.coeff, digits = 2))` days earlier each year (p = `r round(year.p, digits = 4)`).
+There is an effect of year on earliest observation date, with the first earliest observation occuring `r abs(round(year.coeff, digits = 2))` days earlier each year (p = `r round(year.p, digits = 4)`). Cool!
 
 ## But...
 
 Given the increase in butterfly watching, this change in observations could be entirely due to sampling artifacts than biological reality. Consider the number of observations of _P. virginiensis_ through time:
 
-```{r wvw-obs-plot}
+```{r wvw-obs-plot, fig.height = 3}
 wvw.plot.title <- paste0("Number of observations per year, ", 
                      min(wvw$year), " - ", 
                      max(wvw$year))
@@ -133,98 +133,120 @@ wvw.plot <- ggplot(data = wvw.mins, mapping = aes(x = year, y = n.obs)) +
 suppressMessages(expr = print(wvw.plot))
 ```
 
-Pretty clearly increasing. So this means that by chance, recent years are more likely to "catch" earlier observations, just because there are more opportunities. To see this in action, consider a thought experiment where we make up data. Well, bootstrapping data, but it's nearly the same thing. If we create a data set that mimics the observation efforts for the observed data (i.e. `r wvw.mins$n.obs[1]` in `r wvw.mins$year[1]`, `r wvw.mins$n.obs[floor(nrow(wvw.mins)/2)]` in `r wvw.mins$year[floor(nrow(wvw.mins)/2)]`, `r wvw.mins$n.obs[nrow(wvw.mins)]` in `r wvw.mins$year[nrow(wvw.mins)]`, etc.), but instead of actual observations, sample only from the most recent year of observations (`r wvw.mins$year[nrow(wvw.mins)]`). We then use those data to run the linear regression again and see if there is an effect. Ideally, if there is _no_ artifact of sampling, we should see, on average, no effect of year on earliest observation (this is because, for these data, _all_ days of observation are being drawn from the "real" data for `r wvw.mins$year[nrow(wvw.mins)]` alone). Repeating this process `r num.bs.reps` times should result, on average, of an effect size of 0:
+Pretty clearly increasing. So this means that by chance, recent years are more likely to "catch" earlier observations, just because there are more opportunities. To see this in action, consider a thought experiment where we make up data. Well, bootstrapping data, but it's nearly the same thing. If we create a data set that mimics the observation efforts for the observed data (i.e. `r wvw.mins$n.obs[1]` in `r wvw.mins$year[1]`, `r wvw.mins$n.obs[floor(nrow(wvw.mins)/2)]` in `r wvw.mins$year[floor(nrow(wvw.mins)/2)]`, `r wvw.mins$n.obs[nrow(wvw.mins)]` in `r wvw.mins$year[nrow(wvw.mins)]`, etc.), but instead of actual observations, sample only from the most recent year of observations (`r wvw.mins$year[nrow(wvw.mins)]`). We then use those data to run the linear regression again and see if there is an effect. Ideally, if there is _no_ artifact of sampling, we should see, on average, no effect of year on earliest observation (this is because, for these data, _all_ days of observation are being drawn from the "real" data for `r wvw.mins$year[nrow(wvw.mins)]` alone). 
 
-```{r plot-ideal}
+```{r demonstrate-artifact, fig.height = 3}
 sample.from <- wvw$yday[wvw$year == 2018]
 include.years <- wvw.mins$year[wvw.mins$n.obs >= minimum.required]
-wvw.for.bs <- wvw[wvw$year %in% include.years, ]
-
-# Replicate process of sampling and linear regression
-bs.results <- data.frame(replicate = 1:num.bs.reps,
-                         estimate = NA,
-                         p.value = NA)
-for (r in 1:num.bs.reps) {
-  # Data fram will hold bootstrapped data
-  bootstrapped.df <- data.frame(year = rep(include.years, times = sample.size),
+# A data frame we'll use as template for storing bootstrapped data
+bootstrapped.df <- data.frame(year = rep(include.years, times = sample.size),
                                 yday = NA)
-  # Fill in data frame with bootstrapped date for each year
-  for (yr in include.years) {
-    bootstrapped.df$yday[bootstrapped.df$year == yr] <- sample(x = sample.from,
-                                                               size = sample.size,
-                                                               replace = FALSE)
-  }
 
-  bs.mins <- bootstrapped.df %>%
-    group_by(year) %>%
-    summarise(early = min(yday))
-  
-  bs.lm <- lm(early ~ year, data = bs.mins)
-  bs.results$estimate[r] <- summary(bs.lm)$coefficients[2, 1]
-  bs.results$p.value[r] <- summary(bs.lm)$coefficients[2, 4]
-}
+# Set up parallel processing
+num.cores <- detectCores() - 1
+# Initiate cluster
+the.cluster <- makeCluster(num.cores)
 
-# Plot results of bootstrapping
-# Coefficient estimates
-estimate.plot <- ggplot(data = bs.results, mapping = aes(x = estimate)) +
+# Need to explicitly load packages in cluster; invisible the only way to prevent
+# output created by loading tidyverse on cores
+invisible(x = clusterEvalQ(cl = the.cluster, { library(tidyverse) }))
+
+bs.results.ideal <- parLapply(cl = the.cluster,
+                        X = c(1:num.bs.reps), # First argument of fun
+                        fun = function(i, bs.df, sample.vec, sample.size) {
+                          # Fill in data frame with bootstrapped date for each year
+                          for (yr in unique(bs.df$year)) {
+                            bs.df$yday[bs.df$year == yr] <- sample(x = sample.vec,
+                                                                   size = sample.size,
+                                                                   replace = FALSE)
+                          }
+                          bs.mins <- bs.df %>%
+                            group_by(year) %>%
+                            summarise(early = min(yday))
+                          
+                          bs.lm <- lm(early ~ year, data = bs.mins)
+                          coeff.est <- summary(bs.lm)$coefficients[2, 1]
+                          p.value <- summary(bs.lm)$coefficients[2, 4]
+                          return(data.frame(bs.rep = i,
+                                            estimate = coeff.est,
+                                            p.value = p.value))
+                          
+                        }, # end of parLapply fun
+                        bs.df = bootstrapped.df, # Three additional parameters passed to fun
+                        sample.vec = sample.from,
+                        sample.size = sample.size)
+stopCluster(the.cluster)
+# Need to convert vanilla list into data frame
+bs.results.ideal <- do.call(rbind, bs.results.ideal)
+
+########################################
+# Bootstrap and demonstrate the artifact
+# A data frame we'll use as template for storing bootstrapped data
+bootstrapped.df <- wvw[wvw$year %in% include.years, ]
+
+# Initiate cluster
+the.cluster <- makeCluster(num.cores)
+
+# Need to explicitly load packages in cluster; invisible the only way to prevent
+# output created by loading tidyverse on cores
+invisible(x = clusterEvalQ(cl = the.cluster, { library(tidyverse) }))
+
+bs.results.artifact <- parLapply(cl = the.cluster,
+                        X = c(1:num.bs.reps), # First argument of fun
+                        fun = function(i, bs.df, sample.vec) {
+                          # Fill in data frame with bootstrapped date for each year
+                          for (yr in unique(bs.df$year)) {
+                            num.obs <- sum(bs.df$year == yr)
+                            bs.df$yday[bs.df$year == yr] <- sample(x = sample.vec,
+                                                                   size = num.obs)
+                          }
+                          bs.mins <- bs.df %>%
+                            group_by(year) %>%
+                            summarise(early = min(yday))
+                          
+                          suppressMessages(expr = bs.lm <- lm(early ~ year, data = bs.mins))
+                          coeff.est <- summary(bs.lm)$coefficients[2, 1]
+                          p.value <- summary(bs.lm)$coefficients[2, 4]
+                          return(data.frame(bs.rep = i,
+                                            estimate = coeff.est,
+                                            p.value = p.value))
+                          
+                        }, # end of parLapply fun
+                        bs.df = bootstrapped.df, # Three additional parameters passed to fun
+                        sample.vec = sample.from) # End of parLapply call
+stopCluster(the.cluster)
+# Need to convert vanilla list into data frame
+bs.results.artifact <- do.call(rbind, bs.results.artifact)
+
+# Plot of results of bootstrapping, in ideal world
+estimate.ideal.plot <- ggplot(data = bs.results.ideal, mapping = aes(x = estimate)) +
   geom_histogram() +
   geom_vline(xintercept = 0) +
   xlab(label = "Effect size (days/year)") +
   ylab(label = "Count") +
   ggtitle(label = "Expectation in artifact-free world") +
   theme_bw()
-suppressMessages(expr = print(estimate.plot))
-```
 
-However, when we do the bootstrapping experiment, it looks like there is considerable potential for an artifact:
-
-```{r demostrate-artifact}
-# Set up number of reps and distribution to sample from
-sample.from <- wvw$yday[wvw$year == 2018]
-include.years <- wvw.mins$year[wvw.mins$n.obs >= minimum.required]
-wvw.for.bs <- wvw[wvw$year %in% include.years, ]
-
-# Replicate process of sampling and linear regression
-bs.results <- data.frame(replicate = 1:num.bs.reps,
-                         estimate = NA,
-                         p.value = NA)
-
-for (r in 1:num.bs.reps) {
-  # Erase values in yday; these will be replaced via bootstrap sampling
-  wvw.for.bs$yday <- NA
-  # Should be a tidyverse way of doing this...
-  for (y in unique(wvw.for.bs$year)) {
-    num.obs <- sum(wvw.for.bs$year == y)
-    wvw.for.bs$yday[wvw.for.bs$year == y] <- sample(x = sample.from, size = num.obs)
-  }
-  bs.mins <- wvw.for.bs %>%
-    group_by(year) %>%
-    summarise(early = min(yday))
-  
-  suppressMessages(expr = bs.lm <- lm(early ~ year, data = bs.mins))
-  bs.results$estimate[r] <- summary(bs.lm)$coefficients[2, 1]
-  bs.results$p.value[r] <- summary(bs.lm)$coefficients[2, 4]
-}
-
-# Plot results of bootstrapping
-# Coefficient estimates
-estimate.plot <- ggplot(data = bs.results, mapping = aes(x = estimate)) +
+# Plot of results of bootstrapping, demonstrating artifact
+estimate.artifact.plot <- ggplot(data = bs.results.artifact, mapping = aes(x = estimate)) +
   geom_histogram() +
   geom_vline(xintercept = 0, color = "#FF0000") +
   xlab(label = "Effect size (days/year)") +
   ylab(label = "Count") +
-  ggtitle(label = "Artifact of increasing sampling effort through time") +
+  ggtitle(label = "Artifact caused by changes in effort") +
   theme_bw()
-suppressMessages(expr = print(estimate.plot))
+
+# Two-panel plot of bootstrapping results
+suppressMessages(expr = grid.arrange(estimate.ideal.plot, estimate.artifact.plot, nrow = 1))
 ```
 
-And the mean effect size is observations are getting earlier by `r abs(round(mean(bs.results$estimate, na.rm = TRUE), digits = 2))` days per year. We know this is an artifact because all the data are based on `r wvw.mins$year[nrow(wvw.mins)]`.
+Repeating this process `r num.bs.reps` times should result, on average, of an effect size of 0 (left panel). However, when we do the bootstrapping experiment, it looks like there is considerable potential for an artifact (right panel). The mean effect size from the right is `r round(mean(bs.results.artifact$estimate, na.rm = TRUE), digits = 2)`, which we would take to mean that the first observation is getting earlier by `r abs(round(mean(bs.results.artifact$estimate, na.rm = TRUE), digits = 2))` days per year. We know this is an artifact because all the data are based on `r wvw.mins$year[nrow(wvw.mins)]`.
 
 ## Back to the bootstrap
 
 However, we can use bootstrapping to down-sample observations to make effort across years consistent. That is, for each year, we randomly sample a subset of observations so we only have a certain number of observations per year. For that "certain number", we'll a minimum of `r minimum.required` observations per year. Let's test this first by doing the same process we ran before, basing everying on data from `r wvw.mins$year[nrow(wvw.mins)]` alone, but now only drawing `r sample.size` samples for each year. Ideally, we should see no effect of year on earliest observation (i.e. an effect size of 0).
 
-```{r bootstrap-proof-of-concept}
+```{r bootstrap-proof-of-concept, fig.height = 3}
 sample.from <- wvw$yday[wvw$year == 2018]
 include.years <- wvw.mins$year[wvw.mins$n.obs >= minimum.required]
 wvw.for.bs <- wvw[wvw$year %in% include.years, ]
@@ -267,7 +289,7 @@ suppressMessages(expr = print(estimate.plot))
 
 Woo-hoo! So now we have a way to avoid artifacts due to variation in effort. Let's try it for real, downsampling each years' data to only `r minimum.required` per year.Before we try that, what effect does this restriction of `r minimum.required` observations per year have on the size of our data set? We had `r nrow(wvw)` observations, but if we restrict it to only those years with at least `r minimum.required` observations, we have `r nrow(wvw.for.bs)` total observations, spanning `r min(wvw.for.bs$year)` through `r max(wvw.for.bs$year)`. Taking a look at these data:
 
-```{r reduced-data-plot}
+```{r reduced-data-plot, fig.height = 3}
 # TODO: Make a two-panel plot, one with observations, one with earliest observations
 wvw.for.bs <- wvw[wvw$year %in% include.years, ]
 
@@ -281,7 +303,8 @@ obs.plot <- ggplot(data = wvw.for.bs, mapping = aes(x = year,
   geom_smooth() +
   xlab(label = "Year") +
   ylab(label = "Day") +
-  ggtitle(obs.plot.title)
+  ggtitle(obs.plot.title) +
+  theme(plot.title = element_text(size = 14))
 suppressMessages(expr = print(obs.plot))
 ```
 
