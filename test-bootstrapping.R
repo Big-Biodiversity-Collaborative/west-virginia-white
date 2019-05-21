@@ -103,19 +103,6 @@ library(parallel)
 
 # Example
 library(parallel)
-# Calculate the number of cores
-num.cores <- detectCores() - 1
-comp.cluster <- makeCluster(num.cores)
-
-# Establish sampling design parameters
-minimum.required <- 5
-sample.size <- minimum.required
-bootstrap.reps <- 10
-
-sample.from <- wvw.2005.2018$yday[wvw.2005.2018$year == 2018]
-include.years <- wvw.mins$year[wvw.mins$n.obs >= minimum.required]
-
-# Example
 no_cores <- detectCores() - 1
 # Initiate cluster
 cl <- makeCluster(no_cores)
