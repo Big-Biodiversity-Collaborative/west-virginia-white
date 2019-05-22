@@ -68,7 +68,7 @@ After dropping some unrealistic GBIF observations (some from the Indian Ocean so
 # Plot observations for each year separately
 obs.plot <- ggplot(data = wvw, mapping = aes(x = year, y = yday, color = latitude)) +
   geom_point() +
-  geom_smooth() +
+  geom_smooth(method = "lm") +
   xlab(label = "Year") +
   scale_color_gradient(name = "Latitude") +
   ylab(label = "Day") +
@@ -88,7 +88,7 @@ min.plot.title <- paste0("Earliest observations, ",
                      max(wvw$year))
 min.plot <- ggplot(data = wvw.mins, mapping = aes(x = year, y = early)) +
   geom_point() +
-  geom_smooth()  +
+  geom_smooth(method = "lm")  +
   xlab(label = "Year") +
   ylab(label = "Day") +
   ggtitle(min.plot.title) + 
@@ -127,7 +127,7 @@ wvw.plot.title <- paste0("Number of observations per year, ",
 
 wvw.plot <- ggplot(data = wvw.mins, mapping = aes(x = year, y = n.obs)) +
   geom_point() +
-  geom_smooth()  +
+  geom_smooth(method = "lm")  +
   xlab(label = "Year") +
   ylab(label = "Observations") +
   ggtitle(wvw.plot.title) + 
@@ -323,7 +323,7 @@ obs.plot.title <- paste0("P. virginiensis, ",
 obs.plot <- ggplot(data = wvw.min.obs, mapping = aes(x = year, 
                                                      y = yday)) +
   geom_point() +
-  geom_smooth() +
+  geom_smooth(method = "lm") +
   xlab(label = "Year") +
   ylab(label = "Day") +
   ggtitle(obs.plot.title) +
@@ -342,7 +342,7 @@ wvw.plot.title <- paste0("Observations per year, ",
 
 early.obs.plot <- ggplot(data = wvw.min.n.obs, mapping = aes(x = year, y = n.obs)) +
   geom_point() +
-  geom_smooth()  +
+  geom_smooth(method = "lm")  +
   xlab(label = "Year") +
   ylab(label = "# Observations") +
   ggtitle(wvw.plot.title) + 
@@ -392,7 +392,7 @@ downsample.obs.plot <- ggplot(data = downsample.df, mapping = aes(x = year,
                                                                    group = iteration,
                                                                    color = iteration)) +
   geom_point() +
-  geom_smooth() +
+  geom_smooth(method = "lm") +
   xlab(label = "Year") +
   ylab(label = "Day") +
   ggtitle(label = "Downsampled observations") +
@@ -406,7 +406,7 @@ downsample.min.plot <- ggplot(data = downsample.mins, mapping = aes(x = year,
                                                                     group = iteration,
                                                                     color = iteration)) +
   geom_point() +
-  geom_smooth() +
+  geom_smooth(method = "lm") +
   ylim(c(min(downsample.df$yday), max(downsample.df$yday))) +
   xlab(label = "Year") +
   ylab(label = "Day") +
@@ -426,5 +426,6 @@ suppressMessages(expr = grid.arrange(downsample.obs.plot, downsample.min.plot, n
 ### Moment of truth
 
 ```{r downsample-bootstrap, fig.height = 3}
+
 
 ```
