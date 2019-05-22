@@ -16,7 +16,7 @@ suppressPackageStartupMessages(library(parallel))
 # Establish bootstrap and sampling values
 minimum.required <- 5
 sample.size <- minimum.required
-num.bs.reps <- 100
+num.bs.reps <- 1000
 ```
 
 ## Preliminary analyses
