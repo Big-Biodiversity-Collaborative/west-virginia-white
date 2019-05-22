@@ -5,10 +5,6 @@ date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: pdf_document
 ---
 
-<!--
-TODO: Need to consider sampling only a portion for each year.
--->
-
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 suppressPackageStartupMessages(library(tidyverse))
@@ -62,10 +58,12 @@ wvw <- wvw[wvw$year != year(today()), ]
 wvw <- unique(wvw)
 ```
 
-After dropping some unrealistic GBIF observations (some from the Indian Ocean some from January 1) and those from `r year(today())`, there are `r nrow(wvw)` observations. If we plot these by year and day of year, it looks like recently there may have been a shift to earlier emergences.
+After dropping some unrealistic GBIF observations (some from the Indian Ocean, some from January 1) and those from `r year(today())`, there are `r nrow(wvw)` observations. If we plot these by year and day of year, it looks like there is a shift to earlier emergence times through time.
 
-```{r plot-data}
+```{r plot-data, fig.height = 3}
 # Plot observations for each year separately
+obs.plot.title <- "P. virginiensis observations"
+
 obs.plot <- ggplot(data = wvw, mapping = aes(x = year, y = yday, color = latitude)) +
   geom_point() +
   geom_smooth(method = "lm") +
@@ -74,8 +72,12 @@ obs.plot <- ggplot(data = wvw, mapping = aes(x = year, y = yday, color = latitud
   ylab(label = "Day") +
   theme_bw() +
   theme(legend.position = c(0.15, 0.75),
+        legend.background = element_rect(size = 1.5),
+        legend.title = element_text(size = 9),
+        legend.text = element_text(size = 9),
+        legend.key.size = unit(x = 0.7, units = "line"),
         plot.title = element_text(size = 10)) +
-  ggtitle("P. virginiensis observations")
+  ggtitle(obs.plot.title)
 
 # Plot _only_ minimums
 wvw.mins <- wvw %>%
@@ -99,9 +101,7 @@ min.plot <- ggplot(data = wvw.mins, mapping = aes(x = year, y = early)) +
 suppressMessages(expr = grid.arrange(obs.plot, min.plot, nrow = 1))
 ```
 
-Note that observations from lower latitudes (darker points) are generally towards the bottom of the plot, and observations from more northern latitudes (lighter points) are nearer the top of the plot. No big surprise there.
-
-There _is_ a trend towards earlier emergences in more recent years, so let's consider a very crude linear model:
+Note that observations from lower latitudes (darker points) are generally towards the bottom of the plot, and observations from more northern latitudes (lighter points) are nearer the top of the plot. No big surprise there. There _is_ a trend towards earlier emergences in more recent years, so let's consider a very crude linear model:
 $$
 Earliest \enspace observation \enspace day_i = Year_i + \epsilon_i
 $$
@@ -118,9 +118,9 @@ There is an effect of year on earliest observation date, with the first earliest
 
 ## But...
 
-Given the increase in butterfly watching, this change in observations could be entirely due to sampling artifacts than biological reality. Consider the number of observations of _P. virginiensis_ through time:
+Given the increase in butterfly watching, this change in observations could be entirely due to sampling artifacts rather than biological reality. Consider the number of observations of _P. virginiensis_ through time:
 
-```{r wvw-obs-plot, fig.height = 3}
+```{r wvw-obs-plot, fig.height = 2.5}
 wvw.plot.title <- paste0("Number of observations per year, ", 
                      min(wvw$year), " - ", 
                      max(wvw$year))
@@ -137,7 +137,7 @@ wvw.plot <- ggplot(data = wvw.mins, mapping = aes(x = year, y = n.obs)) +
 suppressMessages(expr = print(wvw.plot))
 ```
 
-Pretty clearly increasing. So this means that by chance, recent years are more likely to "catch" earlier observations, just because there are more opportunities. To see this in action, consider a thought experiment where we make up data. Well, bootstrapping data, but it's nearly the same thing. If we create a data set that mimics the observation efforts for the observed data (i.e. `r wvw.mins$n.obs[1]` in `r wvw.mins$year[1]`, `r wvw.mins$n.obs[floor(nrow(wvw.mins)/2)]` in `r wvw.mins$year[floor(nrow(wvw.mins)/2)]`, `r wvw.mins$n.obs[nrow(wvw.mins)]` in `r wvw.mins$year[nrow(wvw.mins)]`, etc.), but instead of actual observations, sample only from the most recent year of observations (`r wvw.mins$year[nrow(wvw.mins)]`). We then use those data to run the linear regression again and see if there is an effect. Ideally, if there is _no_ artifact of sampling, we should see, on average, no effect of year on earliest observation (this is because, for these data, _all_ days of observation are being drawn from the "real" data for `r wvw.mins$year[nrow(wvw.mins)]` alone). 
+Pretty clearly increasing. So this means that by chance, recent years are more likely to "catch" earlier observations, just because there are more opportunities. To see this in action, consider a thought experiment where we make up data. Well, we bootstrap data, but it's nearly the same thing. If we create a data set that mimics the observation efforts for the observed data (i.e. `r wvw.mins$n.obs[1]` in `r wvw.mins$year[1]`, `r wvw.mins$n.obs[floor(nrow(wvw.mins)/2)]` in `r wvw.mins$year[floor(nrow(wvw.mins)/2)]`, `r wvw.mins$n.obs[nrow(wvw.mins)]` in `r wvw.mins$year[nrow(wvw.mins)]`, etc.), but instead of actual observations, sample _only_ from the most recent complete year of observations (`r wvw.mins$year[nrow(wvw.mins)]`). We then use those data to run the linear regression again and see if there is an effect. Ideally, if there is _no_ artifact of sampling, we should see, on average, no effect of year on earliest observation (this is because, for these data, _all_ days of observation are being drawn from the "real" data for `r wvw.mins$year[nrow(wvw.mins)]` alone). 
 
 ```{r demonstrate-artifact, fig.height = 3}
 sample.from <- wvw$yday[wvw$year == 2018]
@@ -246,11 +246,11 @@ estimate.artifact.plot <- ggplot(data = bs.results.artifact, mapping = aes(x = e
 suppressMessages(expr = grid.arrange(estimate.ideal.plot, estimate.artifact.plot, nrow = 1))
 ```
 
-Repeating this process `r num.bs.reps` times should result, on average, of an effect size of 0 (left panel). However, when we do the bootstrapping experiment, it looks like there is considerable potential for an artifact (right panel). The mean effect size from the right is `r round(mean(bs.results.artifact$estimate, na.rm = TRUE), digits = 2)`, which we would take to mean that the first observation is getting earlier by `r abs(round(mean(bs.results.artifact$estimate, na.rm = TRUE), digits = 2))` days per year. We know this is an artifact because all the data are based on `r wvw.mins$year[nrow(wvw.mins)]`.
+Repeating this process `r num.bs.reps` times should result, on average, of an effect size of 0 (left panel). However, when we do the bootstrapping experiment, we see considerable potential for an artifact (right panel). The mean effect size from the right is `r round(mean(bs.results.artifact$estimate, na.rm = TRUE), digits = 2)`, which we would take to mean that the first observation is getting earlier by `r abs(round(mean(bs.results.artifact$estimate, na.rm = TRUE), digits = 2))` days per year. We know this is an artifact because all the data are based on `r wvw.mins$year[nrow(wvw.mins)]`.
 
 ## Back to the bootstrap
 
-However, we can use bootstrapping to down-sample observations to make effort across years consistent. That is, for each year, we randomly sample a subset of observations so we only have a certain number of observations per year. For that "certain number", we'll a minimum of `r minimum.required` observations per year. Let's test this first by doing the same process we ran before, basing everying on data from `r wvw.mins$year[nrow(wvw.mins)]` alone, but now only drawing `r sample.size` samples for each year. Ideally, we should see no effect of year on earliest observation (i.e. an effect size of 0).
+However, we can use bootstrapping and down-sample observations to make effort across years consistent. That is, for each year, we randomly sample a subset of observations so we only have a certain number of observations per year. For that "certain number", we'll require a minimum of `r minimum.required` observations per year. Let's test this first by doing the same process we ran before, basing everying on data from `r wvw.mins$year[nrow(wvw.mins)]` alone, but now only drawing `r sample.size` samples for each year. Ideally, we should see no effect of year on earliest observation (i.e. an effect size of 0).
 
 ```{r bootstrap-proof-of-concept, fig.height = 3}
 sample.from <- wvw$yday[wvw$year == 2018]
@@ -352,7 +352,7 @@ early.obs.plot <- ggplot(data = wvw.min.n.obs, mapping = aes(x = year, y = n.obs
 suppressMessages(expr = grid.arrange(obs.plot, early.obs.plot, nrow = 1))
 ```
 
-There is still an increase in number of observations per year (right panel), so we need apply the downsampling approach to avoid the artifact described above. Downsampling to include only `r sample.size` samples from each year is going to vary each time we do a bootstrapping event. To see this in action, the plots below show three iterations, with different points being sampled at each iteration.
+There is still an increase in number of observations per year (right panel), so we need apply the downsampling approach to avoid the artifact described above. Downsampling to include only `r sample.size` samples from each year is going to vary each time we do a bootstrapping event. To see this in action, the plots below show three iterations, with each iteration a different color.
 
 ```{r downsample-in-action, fig.height = 3}
 # Do three iterations of downsampling and plot these as we have before (all 
@@ -392,7 +392,7 @@ downsample.obs.plot <- ggplot(data = downsample.df, mapping = aes(x = year,
                                                                    group = iteration,
                                                                    color = iteration)) +
   geom_point() +
-  geom_smooth(method = "lm") +
+  geom_smooth(method = "lm", alpha = 0.25) +
   xlab(label = "Year") +
   ylab(label = "Day") +
   ggtitle(label = "Downsampled observations") +
@@ -406,7 +406,7 @@ downsample.min.plot <- ggplot(data = downsample.mins, mapping = aes(x = year,
                                                                     group = iteration,
                                                                     color = iteration)) +
   geom_point() +
-  geom_smooth(method = "lm") +
+  geom_smooth(method = "lm", alpha = 0.25) +
   ylim(c(min(downsample.df$yday), max(downsample.df$yday))) +
   xlab(label = "Year") +
   ylab(label = "Day") +
@@ -425,7 +425,270 @@ suppressMessages(expr = grid.arrange(downsample.obs.plot, downsample.min.plot, n
 
 ### Moment of truth
 
+Now we actually do it, running `r num.bs.reps` bootstrap replicates, sampling only `r sample.size` observations in each year. We then pull out the minimum value for each year (the first observation of each year) and test for a change over time. If _P. virginiensis_ is emerging earlier, we should see a negative trend over time.
+
 ```{r downsample-bootstrap, fig.height = 3}
+# Downsample so we only have sample.size observations per year, but no longer 
+# sampling only from 2018, but rather from the year itself (like iteration 
+# demonstration above)
+include.years <- wvw.mins$year[wvw.mins$n.obs >= minimum.required]
 
+# The data frame with actual data from which we will draw samples
+source.data <- wvw[wvw$year %in% include.years, ]
 
+# A data frame we'll use as template for storing bootstrapped data
+bootstrapped.df <- data.frame(year = rep(include.years, times = sample.size),
+                              yday = NA)
+
+# Initiate cluster
+the.cluster <- makeCluster(num.cores)
+
+# Need to explicitly load packages in cluster; invisible the only way to prevent
+# output created by loading tidyverse on cores
+invisible(x = clusterEvalQ(cl = the.cluster, { library(tidyverse) }))
+
+bs.results.downsample <- parLapply(cl = the.cluster,
+                        X = c(1:num.bs.reps),
+                        fun = function(i, bs.df, sample.df, sample.size) {
+                          # Fill in data bootstrapped for each year, sampling
+                          # *only* from sample.vec, and restricting sample 
+                          # size of each year to sample.size
+                          for (yr in unique(bs.df$year)) {
+                            sample.vec <- sample.df$yday[sample.df$year == yr]
+                            bs.df$yday[bs.df$year == yr] <- sample(x = sample.vec,
+                                                                   size = sample.size,
+                                                                   replace = FALSE)
+                          }
+                          bs.mins <- bs.df %>%
+                            group_by(year) %>%
+                            summarise(early = min(yday))
+                          
+                          bs.lm <- lm(early ~ year, data = bs.mins)
+                          coeff.est <- summary(bs.lm)$coefficients[2, 1]
+                          intercept <- summary(bs.lm)$coefficients[1, 1]
+                          p.value <- summary(bs.lm)$coefficients[2, 4]
+                          return(data.frame(bs.rep = i,
+                                            estimate = coeff.est,
+                                            intercept = intercept,
+                                            p.value = p.value))
+                        },
+                        bs.df = bootstrapped.df,
+                        sample.df = source.data,
+                        sample.size = sample.size)
+
+stopCluster(the.cluster)
+# Need to convert vanilla list into data frame
+bs.results.downsample <- do.call(rbind, bs.results.downsample)
+
+# Plot the coefficient estimates
+bs.plot.title <- paste0("Effect size from ",
+                        num.bs.reps,
+                        " bootstraps")
+
+bs.estimates.plot <- ggplot(data = bs.results.downsample, 
+                            mapping = aes(x = estimate)) +
+  geom_histogram() +
+  geom_vline(xintercept = 0.0, color = "red") +
+  xlab(label = "Effect size (days/year)") +
+  ylab(label = "Count") +
+  ggtitle(label = bs.plot.title) + 
+  theme_bw() +
+  theme(plot.title = element_text(size = 10))
+
+# Plot the results of bootstrapping with early dates
+wvw.mins <- source.data %>%
+  group_by(year) %>%
+  summarise(early = min(yday, na.rm = TRUE),
+            n.obs = n())
+
+bs.lines.title <- paste0("Earliest observations, ", 
+                     min(source.data$year), " - ", 
+                     max(source.data$year))
+
+bs.lines.subtitle <- paste0("Bootstrapped trendlines, ",
+                            num.bs.reps,
+                            " replicates")
+bs.lines.plot <- ggplot(data = wvw.mins,
+                        mapping = aes(x = year, y = early)) +
+  geom_point() +
+  geom_abline(data = bs.results.downsample,
+              alpha = 5/num.bs.reps,
+              mapping = aes(slope = bs.results.downsample$estimate, 
+                            intercept = bs.results.downsample$intercept)) +
+  xlab(label = "Year") +
+  ylab(label = "Day") +
+  ggtitle(bs.lines.title,
+          subtitle = bs.lines.subtitle) + 
+  theme_bw() +
+  theme(plot.title = element_text(size = 10),
+        plot.subtitle = element_text(size = 8))
+
+suppressMessages(expr = grid.arrange(bs.estimates.plot, bs.lines.plot, nrow = 1))
 ```
+
+Which is indeed what we see! 
+
+```{r mean-effect}
+# Calculating the mean effect size from bootstraps, and adding a pseudo p-value
+mean.effect.size <- mean(bs.results.downsample$estimate)
+
+p.value <- sum(bs.results.downsample$estimate >= 0)/num.bs.reps
+p.text <- paste0("= ", round(x = p.value, digits = 3))
+# Need to make sure we don't report p = 0.0
+if (sum(bs.results.downsample$estimate >= 0) < 1) {
+  p.text <- paste0("< ", round(x = 1/num.bs.reps, digits = 3))
+}
+```
+
+From the bootstrap replicates, we see emergences are getting earlier by `r abs(round(x = mean.effect.size, digits = 2))` days per year (p `r p.text`).
+
+
+But I'm still somewhat skeptical because of the observations in 1955.
+
+```{r plot-1955, fig.height = 3}
+# Plot only those years that have at least minimum.required number of 
+# observations and highlight 1955
+wvw.min.obs <- wvw[wvw$year %in% include.years, ]
+
+obs.plot.title <- paste0("P. virginiensis, ",
+                         min(wvw.min.obs$year), " - ", 
+                         max(wvw.min.obs$year))
+obs.plot <- ggplot(data = wvw.min.obs, mapping = aes(x = year, 
+                                                     y = yday)) +
+  geom_point() +
+  annotate(geom = "path",
+           x=1955 + 2* cos(seq(0, 2*pi, length.out = 100)),
+           y=125 + 15 * sin(seq(0, 2*pi, length.out = 100)),
+           color = "red") +
+  xlab(label = "Year") +
+  ylab(label = "Day") +
+  ggtitle(obs.plot.title) +
+  theme_bw() +
+  theme(plot.title = element_text(size = 10))
+
+suppressMessages(expr = print(obs.plot))
+```
+
+My apprehension with 1955 observations is that they are "anchoring" the regressions due to the fairly low variance observed (the observations for 1955 only span `r max(wvw.min.obs$yday[wvw.min.obs$year == 1955]) - min(wvw.min.obs$yday[wvw.min.obs$year == 1955])` days). So I went ahead and dropped all observations for 1955 and ran the bootstrap experiment again.
+
+```{r drop-1955, fig.height = 3}
+# Downsample so we only have sample.size observations per year, but no longer 
+# sampling only from 2018, but rather from the year itself (like iteration 
+# demonstration above)
+include.years <- wvw.mins$year[wvw.mins$n.obs >= minimum.required]
+
+# But we want to drop 1955, the first element of include.years
+include.years <- include.years[-1]
+
+# The data frame with actual data from which we will draw samples
+source.data <- wvw[wvw$year %in% include.years, ]
+
+# A data frame we'll use as template for storing bootstrapped data
+bootstrapped.df <- data.frame(year = rep(include.years, times = sample.size),
+                              yday = NA)
+
+# Initiate cluster
+the.cluster <- makeCluster(num.cores)
+
+# Need to explicitly load packages in cluster; invisible the only way to prevent
+# output created by loading tidyverse on cores
+invisible(x = clusterEvalQ(cl = the.cluster, { library(tidyverse) }))
+
+bs.results.downsample <- parLapply(cl = the.cluster,
+                        X = c(1:num.bs.reps),
+                        fun = function(i, bs.df, sample.df, sample.size) {
+                          # Fill in data bootstrapped for each year, sampling
+                          # *only* from sample.vec, and restricting sample 
+                          # size of each year to sample.size
+                          for (yr in unique(bs.df$year)) {
+                            sample.vec <- sample.df$yday[sample.df$year == yr]
+                            bs.df$yday[bs.df$year == yr] <- sample(x = sample.vec,
+                                                                   size = sample.size,
+                                                                   replace = FALSE)
+                          }
+                          bs.mins <- bs.df %>%
+                            group_by(year) %>%
+                            summarise(early = min(yday))
+                          
+                          bs.lm <- lm(early ~ year, data = bs.mins)
+                          coeff.est <- summary(bs.lm)$coefficients[2, 1]
+                          intercept <- summary(bs.lm)$coefficients[1, 1]
+                          p.value <- summary(bs.lm)$coefficients[2, 4]
+                          return(data.frame(bs.rep = i,
+                                            estimate = coeff.est,
+                                            intercept = intercept,
+                                            p.value = p.value))
+                        },
+                        bs.df = bootstrapped.df,
+                        sample.df = source.data,
+                        sample.size = sample.size)
+
+stopCluster(the.cluster)
+# Need to convert vanilla list into data frame
+bs.results.downsample <- do.call(rbind, bs.results.downsample)
+
+# Plot the coefficient estimates
+bs.plot.title <- paste0("Effect size from ",
+                        num.bs.reps,
+                        " bootstraps")
+
+bs.estimates.plot <- ggplot(data = bs.results.downsample, 
+                            mapping = aes(x = estimate)) +
+  geom_histogram() +
+  geom_vline(xintercept = 0.0, color = "red") +
+  xlab(label = "Effect size (days/year)") +
+  ylab(label = "Count") +
+  ggtitle(label = bs.plot.title, 
+          subtitle = "Observations from 1955 excluded") + 
+  theme_bw() +
+  theme(plot.title = element_text(size = 10),
+        plot.subtitle = element_text(size = 8))
+
+# Plot the results of bootstrapping with early dates
+wvw.mins <- source.data %>%
+  group_by(year) %>%
+  summarise(early = min(yday, na.rm = TRUE),
+            n.obs = n())
+
+bs.lines.title <- paste0("Earliest observations, ", 
+                     min(source.data$year), " - ", 
+                     max(source.data$year))
+
+bs.lines.subtitle <- paste0("Bootstrapped trendlines, ",
+                            num.bs.reps,
+                            " replicates")
+bs.lines.plot <- ggplot(data = wvw.mins,
+                        mapping = aes(x = year, y = early)) +
+  geom_point() +
+  geom_abline(data = bs.results.downsample,
+              alpha = 5/num.bs.reps,
+              mapping = aes(slope = bs.results.downsample$estimate, 
+                            intercept = bs.results.downsample$intercept)) +
+  xlab(label = "Year") +
+  ylab(label = "Day") +
+  ggtitle(bs.lines.title,
+          subtitle = bs.lines.subtitle) + 
+  theme_bw() +
+  theme(plot.title = element_text(size = 10),
+        plot.subtitle = element_text(size = 8))
+
+suppressMessages(expr = grid.arrange(bs.estimates.plot, bs.lines.plot, nrow = 1))
+```
+
+```{r mean-effect-sans-1955}
+# Calculating the mean effect size from bootstraps, and adding a pseudo p-value
+mean.effect.size <- mean(bs.results.downsample$estimate)
+
+p.value <- sum(bs.results.downsample$estimate >= 0)/num.bs.reps
+p.text <- paste0("= ", round(x = p.value, digits = 3))
+# Need to make sure we don't report p = 0.0
+if (sum(bs.results.downsample$estimate >= 0) < 1) {
+  p.text <- paste0("< ", round(x = 1/num.bs.reps, digits = 3))
+}
+```
+
+So even when controlling for my paranoia, _P. virginiensis_ emergence dates are getting earlier through time. Excluding the 1955 data, emergences are still getting earlier by `r abs(round(x = mean.effect.size, digits = 2))` days per year (p `r p.text`).
+
+## Next steps
+
+So, _P. virginiensis_ appears to be coming out earlier. What about _P.oleracea_? Don't know. And _P. virginiensis_'s hosts? Don't know that either. I'm especially keen to see if the slopes of _P. virginiensis_ and its host plants are the same. I think that will be especially relevant to address those questions raised by the the heat-addled Vermonter.
