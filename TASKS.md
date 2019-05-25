@@ -6,6 +6,8 @@
         + Mean flight time
         + Earliest flight time
         + Latest flight time
+    + Weighted least-squares regression for all of the same summary stats as for
+    bootstrapping
     + Template for a report with visualization of above stats & graphs
 2. Create reports for 
     + _P. virginiensis_
