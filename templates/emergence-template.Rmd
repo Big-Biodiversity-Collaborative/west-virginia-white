@@ -1,0 +1,93 @@
+---
+title: "Early flight template - FIXME"
+author: "Jeff Oliver"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+# This is only a template.  
+`FIXME` values in yaml header and `data-entry` chunk below should be filled in with appropriate information, and this text deleted
+
+```{r data-entry}
+genus_name <- "FIXME"    # e.g. "Pieris
+species_name <- "FIXME"  # e.g. "virginiensis"
+long_limits <- c(NA, NA) # FIXME e.g. c(-99, -45)
+lat_limits <- c(NA, NA)  # FIXME e.g. c(15, 70)
+
+# Path to folder that contains retrieval script, get_clean_obs_function.R
+retrieval_path <- "../insect_migration/scripts/"
+retrieval_name <- "get_clean_obs_function.R"
+```
+
+```{r check-values, results = "asis"}
+# Keep track of whether a report can be assembled after the setup-check
+continue_knitting <- TRUE
+
+# Seems excessive...
+if (file.exists("scripts/global_values.R")) {
+  source(file = "scripts/global_values.R")
+  globals <- global_values()
+} else {
+  cat("\n## Missing global values script\n")
+  cat("Make sure scripts/global_values.R exists")
+  continue_knitting <- FALSE
+}
+
+# Make sure retrieval_path has trailing /
+if (substr(x = retrieval_path, start = nchar(retrieval_path), stop = nchar(retrieval_path)) != "/") {
+  retrieval_path <- paste0(retrieval_path, "/")
+}
+
+# Check to make sure get_clean_obs_function exists
+if (!file.exists(paste0(retrieval_path, retrieval_name))) {
+  cat("\n## Missing required function `get_clean_obs_function`.\n")
+  cat("Please check `retrieval_path` setting in `data-entry` chunk of Rmarkdown file. The function can be obtained from GitHub via `git clone https://github.com/keatonwilson/insect_migration.git`\n")
+  continue_knitting <- FALSE
+}
+
+if ("FIXME" %in% c(species_name, genus_name)) {
+  cat("\n## `FIXME` values need to be changed in `data-entry` chunk of Rmarkdown file.\n")
+  continue_knitting <- FALSE
+}
+
+if (any(is.na(c(long_limits, lat_limits)))) {
+  cat("\n## `NA` values need to be changed in `data-entry` chunk of Rmarkdown file.\n")
+  continue_knitting <- FALSE
+}
+
+# Load required packages for get_clean_obs_function
+required_pkgs <- c("spocc", "mapr")
+missing_pkgs <- c()
+for (pkg in required_pkgs) {
+  if (!library(package = pkg, logical.return = TRUE, character.only = TRUE)) {
+    missing_pkgs <- c(missing_pkgs, pkg)
+  }
+}
+if (length(missing_pkgs) > 0) { 
+  cat("\n## Missing one or more required libraries.\n")
+  cat("Please install the following package(s): ", paste(missing_pkgs, collapse = ", "), ".\n", sep = "")
+  continue_knitting <- FALSE
+}
+```
+
+```{r status-check}
+# If there are problems at this point, don't bother evaluating the rest of the 
+# document
+if (!continue_knitting) {
+  knitr::knit_exit()
+}
+```
+
+# Report for _`r paste(genus_name, species_name, sep = " ")`_
+
+```{r download-data}
+source(file = paste0(retrieval_path, retrieval_name))
+observations <- get_clean_obs(genus = genus_name, 
+                              species = species_name, 
+                              lonlim = long_limits, 
+                              latlim = lat_limits)
+```
