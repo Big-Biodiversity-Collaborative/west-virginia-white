@@ -16,7 +16,7 @@ global_values <- function() {
   values <- list(minimum_required = 5,
                  bs_sample_size = 5,
                  num_bs_reps = 1000,
-                 min_year = 1776,
+                 min_year = 1950,
                  max_year = as.integer(format(Sys.Date(), "%Y")) - 1, # previous year
                  min_julian = 1,
                  max_julian = 366)

@@ -9,9 +9,6 @@ output: pdf_document
 knitr::opts_chunk$set(echo = FALSE)
 ```
 
-# This is only a template.  
-`FIXME` values in yaml header and `data-entry` chunk below should be filled in with appropriate information, and this text deleted
-
 ```{r data-entry}
 genus_name <- "Pieris"
 species_name <- "virginiensis"
@@ -59,10 +56,10 @@ if (any(is.na(c(long_limits, lat_limits)))) {
   continue_knitting <- FALSE
 }
 
-required_pkgs <- c("spocc", "mapr")
+required_pkgs <- c("tidyverse", "spocc", "mapr")
 missing_pkgs <- c()
 for (pkg in required_pkgs) {
-  if (!library(package = pkg, logical.return = TRUE, character.only = TRUE)) {
+  if (!suppressPackageStartupMessages(library(package = pkg, logical.return = TRUE, character.only = TRUE))) {
     missing_pkgs <- c(missing_pkgs, pkg)
   }
 }
@@ -73,7 +70,7 @@ if (length(missing_pkgs) > 0) {
 }
 ```
 
-```{r status-check}
+```{r status-check-setup}
 # If there are problems at this point, don't bother evaluating the rest of the 
 # document
 if (!continue_knitting) {
@@ -83,12 +80,21 @@ if (!continue_knitting) {
 
 # Report for _`r paste(genus_name, species_name, sep = " ")`_
 
-```{r download-data}
+```{r download-data, include = FALSE}
+# Use include = FALSE to suppress warning messages
 source(file = paste0(retrieval_path, retrieval_name))
-observations <- get_clean_obs(genus = genus_name, 
-                              species = species_name, 
-                              lonlim = long_limits, 
-                              latlim = lat_limits)
+
+data_file <- paste0("data/", genus_name, "-", species_name, "-spocc.csv")
+
+if (file.exists(data_file)) {
+  observations <- read_csv(file = data_file)
+} else {
+  observations <- get_clean_obs(genus = genus_name, 
+                                species = species_name, 
+                                lonlim = long_limits, 
+                                latlim = lat_limits)
+# UPDATE: This error is likely caused by local network issues causing long 
+# address resolution leading to timeouts
 # TODO: need to test this with get_clean_obs_function; the above throws:
 # Quitting from lines 87-92 (Pieris-virginiensis-emergence.Rmd) 
 #  Error: object 'longitude' not found
@@ -97,5 +103,47 @@ observations <- get_clean_obs(genus = genus_name,
 # mutate.tbl_df(., longitude = as.numeric(longitude), latitude = as.numeric(latitude)) 
 # mutate(., longitude = as.numeric(longitude), latitude = as.numeric(latitude)) 
 
+}
 
+if (nrow(observations) > 0) {
+  write_csv(x = observations, path = data_file)
+} else {
+  cat("\n## No records returned for _", genus_name, " ", species_name, "_.\n")
+  cat("Check to be sure names are spelled correctly and iNat and GBIF servers are responsive")
+  continue_knitting <- FALSE
+}
+```
+
+```{r status-check-data}
+# If there are problems at this point, don't bother evaluating the rest of the 
+# document
+if (!continue_knitting) {
+  knitr::knit_exit()
+}
+```
+
+Retrieval from iNaturalist and GBIF returned `r nrow(observations)` observations.
+
+```{r data-cleaning}
+# Restrict to the days and years of interest
+observations <- observations %>%
+  filter(!is.na(date),
+         yday(x = date) >= globals$min_julian,
+         yday(x = date) <= globals$max_julian,
+         year(x = date) >= globals$min_year,
+         year(x = date) <= globals$max_year)
+
+if (nrow(observations) == 0) {
+  cat("\n## Zero observations remain after date filtering.\n")
+  cat("Current filters only include ", globals$min_year, "-", globals$max_year)
+  cat(" and julian days ", globals$min_julian, "-", globals$max_julian, ".\n")
+}
+```
+
+```{r status-check-cleaning}
+# If there are problems at this point, don't bother evaluating the rest of the 
+# document
+if (!continue_knitting) {
+  knitr::knit_exit()
+}
 ```
