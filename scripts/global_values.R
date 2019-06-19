@@ -15,10 +15,10 @@
 global_values <- function() {
   values <- list(minimum_required = 5,
                  bs_sample_size = 5,
-                 num_bs_reps = 1000,
-                 min_year = 1950,
+                 num_bs_reps = 100,
+                 min_year = 1940,
                  max_year = as.integer(format(Sys.Date(), "%Y")) - 1, # previous year
-                 min_julian = 1,
-                 max_julian = 366)
+                 min_julian = 60, # March 1 (non-leap)
+                 max_julian = 273) # September 20 (non-leap)
   return(values)
 }

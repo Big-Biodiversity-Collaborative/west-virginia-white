@@ -7,6 +7,11 @@ output: pdf_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
+suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages(library(lubridate))
+suppressPackageStartupMessages(library(parallel))
+suppressPackageStartupMessages(library(gridExtra))
+suppressPackageStartupMessages(library(ggmap))
 ```
 
 ```{r data-entry}
@@ -137,6 +142,7 @@ if (nrow(observations) == 0) {
   cat("\n## Zero observations remain after date filtering.\n")
   cat("Current filters only include ", globals$min_year, "-", globals$max_year)
   cat(" and julian days ", globals$min_julian, "-", globals$max_julian, ".\n")
+  continue_knitting <- FALSE
 }
 ```
 
@@ -146,4 +152,242 @@ if (nrow(observations) == 0) {
 if (!continue_knitting) {
   knitr::knit_exit()
 }
+```
+
+```{r meet-minimums}
+# Calculate which years meet the minimum number of required samples
+year_counts <- observations %>%  
+  group_by(year = year(date)) %>%
+  summarize(obs_count = n()) %>%
+  filter(obs_count >= globals$minimum_required)
+
+# Filter obserations to only include those years with enough samples
+observations <- observations %>%
+  filter(year(date) %in% year_counts$year)
+
+if (nrow(observations) == 0) {
+  cat("\n## Zero observations remain after removing years with too few observations\n")
+  cat("Current filter requires at least ", globals$minimum_required, 
+      " observations per year", ".\n")
+  continue_knitting <- FALSE
+}
+```
+
+```{r status-check-minimums}
+# If there are problems at this point, don't bother evaluating the rest of the 
+# document
+if (!continue_knitting) {
+  knitr::knit_exit()
+}
+```
+
+
+Distribution of _`r paste(genus_name, species_name, sep = " ")`_ data for `r min(year(observations$date))` - `r max(year(observations$date))` (total of `r nrow(observations)` observations following date and sample size filtering):
+
+```{r map-data}
+# TODO: See check-wvw-obs.R
+
+
+
+map_bounds <- c(floor(min(observations$longitude)),
+                floor(min(observations$latitude)),
+                ceiling(max(observations$longitude)),
+                ceiling(max(observations$latitude)))
+# Get a map image
+# Have to provide min/max for lat and long, otherwise will assume Google map,
+# which requires API key
+obs_map <- get_map(location = map_bounds,
+                   source = "stamen",
+                   maptype = "terrain")
+map_title <- paste0(genus_name, " ", species_name, " observations")
+
+map_plot <- ggmap(ggmap = obs_map) +
+  geom_point(data = observations,
+             mapping = aes(x = longitude, y = latitude),
+             size = 1.0) +
+  theme_bw() +
+  ggtitle(label = map_title)
+
+# Plot observations by year
+obs_title <- paste0(genus_name, " ", species_name, " observations")
+obs_plot <- ggplot(data = observations,
+                   mapping = aes(x = year(date),
+                                 y = yday(date),
+                                 color = latitude)) +
+  geom_point() +
+  xlab(label = "Year") +
+  scale_color_gradient(name = "Latitude") +
+  ylab(label = "Day") +
+  theme_bw() +
+  theme(legend.position = c(0.08, 0.85),
+        legend.background = element_rect(size = 1.5),
+        legend.title = element_text(size = 9),
+        legend.text = element_text(size = 9),
+        legend.key.size = unit(x = 0.7, units = "line"),
+        plot.title = element_text(size = 10)) +
+  ggtitle(obs_title)
+
+suppressMessages(expr = grid.arrange(map_plot, 
+                                     obs_plot, 
+                                     nrow = 1))
+```
+
+# Test for change in emergences
+## Bootstrapping
+```{r bootstrap-linear-regression}
+# A data frame we'll use as template for storing bootstrapped data
+bootstrapped_df <- data.frame(year = rep(year_counts$year, 
+                                         times = globals$bs_sample_size),
+                              yday = NA)
+
+
+# Set up parallel processing
+num_cores <- detectCores() - 1
+
+# Initiate cluster
+the_cluster <- makeCluster(num_cores)
+
+# Need to explicitly load packages in cluster; invisible the only way to prevent
+# output created by loading tidyverse on cores
+invisible(x = clusterEvalQ(cl = the_cluster, { library(tidyverse); library(lubridate) }))
+
+bs_results <- parLapply(cl = the_cluster,
+                        X = c(1:globals$num_bs_reps),
+                        # X is passed into the i argument below
+                        fun = function(i, bs_df, sample_df, sample_size) {
+                          # Fill in data bootstrapped for each year, sampling
+                          # *only* from sample_vec, and restricting sample 
+                          # size of each year to sample_size
+                          for (yr in unique(bs_df$year)) {
+                            sample_vec <- yday(sample_df$date)[year(sample_df$date) == yr]
+                            bs_df$yday[bs_df$year == yr] <- sample(x = sample_vec,
+                                                                   size = sample_size,
+                                                                   replace = FALSE)
+                          }
+                          # return(i)
+
+                          bs_mins <- bs_df %>%
+                            group_by(year) %>%
+                            summarise(early = min(yday))
+
+                          bs_lm <- lm(early ~ year, data = bs_mins)
+                          coeff_est <- summary(bs_lm)$coefficients[2, 1]
+                          intercept <- summary(bs_lm)$coefficients[1, 1]
+                          p_value <- summary(bs_lm)$coefficients[2, 4]
+                          return(data.frame(bs_rep = i,
+                                            estimate = coeff_est,
+                                            intercept = intercept,
+                                            p_value = p_value))
+                        },
+                        bs_df = bootstrapped_df,
+                        sample_df = observations,
+                        sample_size = globals$bs_sample_size)
+
+stopCluster(the_cluster)
+# Need to convert vanilla list into data frame
+bs_results <- do.call(rbind, bs_results)
+```
+
+### Linear regression
+```{r lm-reporting}
+mean_effect_size <- mean(bs_results$estimate)
+direction <- ifelse(mean_effect_size < 0,
+                    yes = "earlier",
+                    no = "later")
+p_value <- ifelse(mean_effect_size < 0,
+                  yes = sum(bs_results$estimate > 0),
+                  no = sum(bs_results$estimate < 0)) / globals$num_bs_reps
+
+p_value_text <- paste0("= ", round(x = p_value, digits = 3))
+if (p_value == 0) {
+  p_value_text <- paste0("< ", round(x = 1/globals$num_bs_reps, digits = 3))
+}
+```
+
+In `r globals$num_bs_reps` bootstrap replicates, the mean change in emergence times was `r round(x = abs(mean_effect_size), digits = 3)` days `r direction` per year (p `r p_value_text`).
+
+```{r plot-bootstrap-lm}
+# Plot the bootstrap results
+
+# Plot the coefficient estimates
+plot_title <- paste0("Effect size from ",
+                        globals$num_bs_reps,
+                        " bootstraps")
+
+estimates_plot <- ggplot(data = bs_results, 
+                            mapping = aes(x = estimate)) +
+  geom_histogram() +
+  geom_vline(xintercept = 0.0, color = "red") +
+  xlab(label = "Effect size (days/year)") +
+  ylab(label = "Count") +
+  ggtitle(label = plot_title) + 
+  theme_bw() +
+  theme(plot.title = element_text(size = 10))
+
+# Plot the results of bootstrapping with early dates
+emergences <- observations %>%
+  group_by(year = year(date)) %>%
+  summarise(early = min(yday(date), na.rm = TRUE),
+            n_obs = n())
+
+emergences_title <- paste0("Earliest observations, ", 
+                     min(year(observations$date)), " - ", 
+                     max(year(observations$date)))
+
+emergences_subtitle <- paste0("Bootstrapped trendlines, ",
+                            globals$num_bs_reps,
+                            " replicates")
+emergences_plot <- ggplot(data = emergences,
+                        mapping = aes(x = year, y = early)) +
+  geom_point() +
+  geom_abline(data = bs_results,
+              alpha = 5/globals$num_bs_reps,
+              mapping = aes(slope = bs_results$estimate, 
+                            intercept = bs_results$intercept)) +
+  xlab(label = "Year") +
+  ylab(label = "Day") +
+  ggtitle(emergences_title,
+          subtitle = emergences_subtitle) + 
+  theme_bw() +
+  theme(plot.title = element_text(size = 10),
+        plot.subtitle = element_text(size = 8))
+
+suppressMessages(expr = grid.arrange(estimates_plot, 
+                                     emergences_plot, 
+                                     nrow = 1))
+```
+
+### Linear spline
+## Weighted least-squares regression
+```{r wls-linear}
+# Pull out eariest date for each year, as well as number of observations for 
+# that year; the number of observations will be used as the weight for that year
+earliest <- observations %>%
+  group_by(year = year(date)) %>%
+  summarize(early = min(x = yday(date)),
+            n_obs = n())
+earliest <- as.data.frame(earliest)
+
+# Use number of observations as weight for each year
+wls_model <- lm(early ~ year, data = earliest, weights = n_obs)
+wls_summary <- summary(wls_model)
+wls_estimate <- wls_summary$coefficients[2, 1]
+wls_p_value <- wls_summary$coefficients[2, 4]
+
+wls_direction <- ifelse(wls_estimate < 0,
+                        yes = "earlier",
+                        no = "later")
+```
+
+### Linear regression
+In weighted least-squares regression, using a simple linear model with observations weighted by the number of observations in that year, the effect size was `r round(x = abs(wls_estimate), digits = 3)` days `r wls_direction` per year (p = `r wls_p_value`).
+
+### Linear spline
+```{r wls-spline}
+# Testing smoothing spline
+# TODO: probably want to find a way to do a linear spline
+spline_model <- smooth.spline(x = earliest$year,
+                              y = earliest$early,
+                              w = earliest$n_obs,
+                             nknots = 4) # <=3 produces errors
 ```
