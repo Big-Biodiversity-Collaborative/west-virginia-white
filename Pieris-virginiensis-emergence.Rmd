@@ -6,7 +6,7 @@ output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(echo = FALSE, fig.height = 3)
 suppressPackageStartupMessages(library(tidyverse))
 suppressPackageStartupMessages(library(lubridate))
 suppressPackageStartupMessages(library(parallel))
@@ -184,32 +184,38 @@ if (!continue_knitting) {
 
 Distribution of _`r paste(genus_name, species_name, sep = " ")`_ data for `r min(year(observations$date))` - `r max(year(observations$date))` (total of `r nrow(observations)` observations following date and sample size filtering):
 
-```{r map-data}
-# TODO: See check-wvw-obs.R
+```{r plot-data}
+# Plot a map of observations post-filtering
 
+# Only download map files if we haven't already
+map_file <- data_file <- paste0("data/maps/", genus_name, "-", species_name, "-map.RData")
 
-
-map_bounds <- c(floor(min(observations$longitude)),
+if (file.exists(map_file)) {
+  load(file = map_file)
+} else {
+  # Get a map image
+  # Have to provide min/max for lat and long, otherwise will assume Google map,
+  # regardless of value sent to source parameter
+  map_bounds <- c(floor(min(observations$longitude)),
                 floor(min(observations$latitude)),
                 ceiling(max(observations$longitude)),
                 ceiling(max(observations$latitude)))
-# Get a map image
-# Have to provide min/max for lat and long, otherwise will assume Google map,
-# which requires API key
-obs_map <- get_map(location = map_bounds,
-                   source = "stamen",
-                   maptype = "terrain")
-map_title <- paste0(genus_name, " ", species_name, " observations")
+
+  obs_map <- get_map(location = map_bounds,
+                     source = "stamen",
+                     maptype = "terrain")
+  save(obs_map, file = map_file)
+}
 
 map_plot <- ggmap(ggmap = obs_map) +
   geom_point(data = observations,
              mapping = aes(x = longitude, y = latitude),
              size = 1.0) +
   theme_bw() +
-  ggtitle(label = map_title)
+  ylab(label = "Latitude") +
+  xlab(label = "Longitude")
 
 # Plot observations by year
-obs_title <- paste0(genus_name, " ", species_name, " observations")
 obs_plot <- ggplot(data = observations,
                    mapping = aes(x = year(date),
                                  y = yday(date),
@@ -219,18 +225,18 @@ obs_plot <- ggplot(data = observations,
   scale_color_gradient(name = "Latitude") +
   ylab(label = "Day") +
   theme_bw() +
-  theme(legend.position = c(0.08, 0.85),
+  theme(legend.position = "none", #c(0.12, 0.8),
         legend.background = element_rect(size = 1.5),
-        legend.title = element_text(size = 9),
-        legend.text = element_text(size = 9),
-        legend.key.size = unit(x = 0.7, units = "line"),
-        plot.title = element_text(size = 10)) +
-  ggtitle(obs_title)
+        legend.title = element_text(size = 6),
+        legend.text = element_text(size = 6),
+        legend.key.size = unit(x = 0.7, units = "line"))
 
+# Two-panel plot of map and time
 suppressMessages(expr = grid.arrange(map_plot, 
                                      obs_plot, 
                                      nrow = 1))
 ```
+Note in left-hand plot, darker points are from lower latitudes, while lighter points are from higher latitudes.
 
 # Test for change in emergences
 ## Bootstrapping
@@ -372,11 +378,16 @@ earliest <- as.data.frame(earliest)
 wls_model <- lm(early ~ year, data = earliest, weights = n_obs)
 wls_summary <- summary(wls_model)
 wls_estimate <- wls_summary$coefficients[2, 1]
-wls_p_value <- wls_summary$coefficients[2, 4]
+
+# Only want to show 3 digits without rounding to 0
+wls_p_value <- formatC(x = wls_summary$coefficients[2, 4],
+                       digits = 3,
+                       format = "e")
 
 wls_direction <- ifelse(wls_estimate < 0,
                         yes = "earlier",
                         no = "later")
+
 ```
 
 ### Linear regression
