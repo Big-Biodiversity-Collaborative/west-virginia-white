@@ -112,6 +112,19 @@ if (file.exists(data_file)) {
 
 if (nrow(observations) > 0) {
   write_csv(x = observations, path = data_file)
+  check_name <- FALSE
+  if (nrow(observations[observations$prov == "gbif", ]) == 0) {
+    cat("\n### Note: zero records were returned from GBIF\n")
+    check_name <- TRUE
+  }
+  if (nrow(observations[observations$prov == "inat", ]) == 0) {
+    cat("\n### Note: zero records were returned from iNaturalist\n")
+    check_name <- TRUE
+  }
+  if (check_name) {
+    cat("Please check to see if _", genus_name, " ", species_name, 
+        "_ is the name used for the data provider.\n")
+  }
 } else {
   cat("\n## No records returned for _", genus_name, " ", species_name, "_.\n")
   cat("Check to be sure names are spelled correctly and iNat and GBIF servers are responsive")
@@ -388,6 +401,37 @@ wls_direction <- ifelse(wls_estimate < 0,
                         yes = "earlier",
                         no = "later")
 
+# TODO: add plot with line and CI's around the prediction
+
+wls_title <- "Weighted least squares"
+
+# Use predict.lm to get confidence interval of the model
+wls_predict <- predict(wls_model, 
+                       interval = "confidence",
+                       weights = earliest$n_obs)
+earliest$lwr <- wls_predict[, "lwr"]
+earliest$upr <- wls_predict[, "upr"]
+wls_slope <- wls_summary$coefficients[2, 1]
+wls_intercept <- wls_summary$coefficients[1, 1]
+
+wls_plot <- ggplot(data = earliest, mapping = aes(x = year)) +
+  geom_point(mapping = aes(y = early)) +
+  geom_line(mapping = aes(y = lwr), color = "red") +
+  geom_line(mapping = aes(y = upr), color = "red") +
+  # geom_abline(data = NULL, slope = wls_slope, intercept = wls_intercept) +
+  geom_segment(mapping = aes(x = min(year), 
+                             xend = max(year),
+                             y = (wls_intercept + min(year) * wls_slope),
+                             yend = (wls_intercept + max(year) * wls_slope)),
+               color = "black",
+               linetype = "solid",
+               size = 0.2) +
+  ylab("Day") + 
+  xlab("Year") +
+  theme_bw() +
+  ggtitle(label = wls_title,
+          subtitle = "Prediction with 95% confidence intervals")
+print(wls_plot)
 ```
 
 ### Linear regression
