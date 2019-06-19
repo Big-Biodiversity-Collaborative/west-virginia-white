@@ -1,5 +1,5 @@
 ---
-title: "Pieris virginiensis"
+title: "Cardamine concatenata"
 author: "Jeff Oliver"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: pdf_document
@@ -15,8 +15,8 @@ suppressPackageStartupMessages(library(ggmap))
 ```
 
 ```{r data-entry}
-genus_name <- "Pieris"
-species_name <- "virginiensis"
+genus_name <- "Cardamine"
+species_name <- "concatenata"
 long_limits <- c(-99, -45)
 lat_limits <- c(15, 70)
 
