@@ -1,5 +1,5 @@
 ---
-title: "Early flight report"
+title: "Emergence report"
 author: "Jeff Oliver"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: pdf_document
@@ -284,15 +284,7 @@ bs_results <- parLapply(cl = the_cluster,
                           # *only* from sample_vec, and restricting sample 
                           # size of each year to sample_size
                           for (yr in unique(bs_df$year)) {
-                            # TODO: revise sampling code so that instead of 
-                            # sampling a vector, instead sample a *row*, so we
-                            # can have lat/long data, too
-                            # sample_vec <- yday(sample_df$date)[year(sample_df$date) == yr]
-                            # bs_df$yday[bs_df$year == yr] <- sample(x = sample_vec,
-                            #                                        size = sample_size,
-                            #                                        replace = FALSE)
-                            # Start with subsetting the dataframe to only year
-                            # of interest
+                            # Subset the dataframe to only year of interest
                             subset_df <- sample_df[year(sample_df$date) == yr, ]
                             # Identify the rows to draw data from
                             sample_rows <- sample(x = 1:nrow(subset_df),
@@ -303,23 +295,32 @@ bs_results <- parLapply(cl = the_cluster,
                             bs_df$longitude[bs_df$year == yr] <- subset_df$longitude[sample_rows]
                             bs_df$latitude[bs_df$year == yr] <- subset_df$latitude[sample_rows]
                           }
-
-                          # TODO: this needs to be updated so other data come
-                          # through (i.e. longitude & latitude)
+                          
+                          # Extract rows with minimum value for each year
                           bs_mins <- bs_df %>%
                             group_by(year) %>%
                             filter(yday == min(yday))
-                            # summarise(early = min(yday))
-
-                          # bs_lm <- lm(early ~ year, data = bs_mins)
+                          
+                          # Simple model, only year as predictor
                           bs_lm <- lm(yday ~ year, data = bs_mins)
                           coeff_est <- summary(bs_lm)$coefficients[2, 1]
                           intercept <- summary(bs_lm)$coefficients[1, 1]
                           p_value <- summary(bs_lm)$coefficients[2, 4]
+                          
+                          # Model with year, latitude & interaction
+                          bs_lm_int <- lm(yday ~ year + latitude + year * latitude, 
+                                          data = bs_mins)
+                          coeff_est_int <- summary(bs_lm_int)$coefficients[2, 1]
+                          intercept_int <- summary(bs_lm_int)$coefficients[1, 1]
+                          p_value_int <- summary(bs_lm_int)$coefficients[2, 4]
+
                           return(data.frame(bs_rep = i,
                                             estimate = coeff_est,
                                             intercept = intercept,
-                                            p_value = p_value))
+                                            p_value = p_value,
+                                            estimate_int = coeff_est_int,
+                                            intercept_int = intercept_int,
+                                            p_value_int = p_value_int))
                         },
                         bs_df = bootstrapped_df,
                         sample_df = observations,
@@ -331,30 +332,58 @@ bs_results <- do.call(rbind, bs_results)
 ```
 
 ### Linear regression
+#### Simple model
 ```{r lm-reporting}
-mean_effect_size <- mean(bs_results$estimate)
-direction <- ifelse(mean_effect_size < 0,
-                    yes = "earlier",
-                    no = "later")
-p_value <- ifelse(mean_effect_size < 0,
-                  yes = sum(bs_results$estimate > 0),
-                  no = sum(bs_results$estimate < 0)) / globals$num_bs_reps
+# Data frame to hold values for reporting out
+lm_report <- data.frame(model = c("simple", "complex"),
+                        estimate = NA,
+                        direction = "earlier",
+                        p_value = NA,
+                        p_value_text = NA)
 
-p_value_text <- paste0("= ", round(x = p_value, digits = 3))
-if (p_value == 0) {
-  p_value_text <- paste0("< ", round(x = 1/globals$num_bs_reps, digits = 3))
-}
+lm_report$estimate <- c(mean(bs_results$estimate),
+                        mean(bs_results$estimate_int))
+
+lm_report$direction[lm_report$estimate > 0] <- "later"
+
+# Ugly
+lm_report$p_value[1] <- ifelse(lm_report$estimate[1] < 0,
+                            yes = sum(bs_results$estimate > 0),
+                            no = sum(bs_results$estimate < 0)) / globals$num_bs_reps
+lm_report$p_value[2] <- ifelse(lm_report$estimate[2] < 0,
+                            yes = sum(bs_results$estimate_int > 0),
+                            no = sum(bs_results$estimate_int < 0)) / globals$num_bs_reps
+
+lm_report$p_value_text <- paste0("= ", round(x = lm_report$p_value, digits = 3))
+lm_report$p_value_text[lm_report$p_value == 0] <- 
+  paste0("< ", round(x = 1/globals$num_bs_reps, digits = 3))
+
+# mean_effect_size <- mean(bs_results$estimate)
+# direction <- ifelse(mean_effect_size < 0,
+#                     yes = "earlier",
+#                     no = "later")
+# p_value <- ifelse(mean_effect_size < 0,
+#                   yes = sum(bs_results$estimate > 0),
+#                   no = sum(bs_results$estimate < 0)) / globals$num_bs_reps
+# 
+# p_value_text <- paste0("= ", round(x = p_value, digits = 3))
+# if (p_value == 0) {
+#   p_value_text <- paste0("< ", round(x = 1/globals$num_bs_reps, digits = 3))
+# }
 ```
 
-In `r globals$num_bs_reps` bootstrap replicates, the mean change in emergence times was `r round(x = abs(mean_effect_size), digits = 3)` days `r direction` per year (p `r p_value_text`).
+For the simple model, only using year a the predictor, the mean change in emergence times was `r round(x = abs(lm_report$estimate[1]), digits = 3)` days `r lm_report$direction[1]` per year (p `r lm_report$p_value_text[1]`).
 
-```{r plot-bootstrap-lm}
+When controlling for latitude and a year x latitude interacton, the mean change in emergence times was `r round(x = abs(lm_report$estimate[2]), digits = 3)` days `r lm_report$direction[2]` per year (p `r lm_report$p_value_text[2]`).
+
+```{r plot-bootstrap-lm, fig.height = 6}
 # Plot the bootstrap results
 
 # Plot the coefficient estimates
 plot_title <- paste0("Effect size from ",
                         globals$num_bs_reps,
                         " bootstraps")
+plot_subtitle <- "Simple model"
 
 estimates_plot <- ggplot(data = bs_results, 
                             mapping = aes(x = estimate)) +
@@ -362,7 +391,7 @@ estimates_plot <- ggplot(data = bs_results,
   geom_vline(xintercept = 0.0, color = "red") +
   xlab(label = "Effect size (days/year)") +
   ylab(label = "Count") +
-  ggtitle(label = plot_title) + 
+  ggtitle(label = plot_title, subtitle = plot_subtitle) + 
   theme_bw() +
   theme(plot.title = element_text(size = 10))
 
@@ -376,9 +405,7 @@ emergences_title <- paste0("Earliest observations, ",
                      min(year(observations$date)), " - ", 
                      max(year(observations$date)))
 
-emergences_subtitle <- paste0("Bootstrapped trendlines, ",
-                            globals$num_bs_reps,
-                            " replicates")
+emergences_subtitle <- paste0("Bootstrapped trendlines, simple model ")
 emergences_plot <- ggplot(data = emergences,
                         mapping = aes(x = year, y = early)) +
   geom_point() +
@@ -394,9 +421,55 @@ emergences_plot <- ggplot(data = emergences,
   theme(plot.title = element_text(size = 10),
         plot.subtitle = element_text(size = 8))
 
+# Results from model including latitude
+# Plot the coefficient estimates
+plot_title <- paste0("Effect size from ",
+                        globals$num_bs_reps,
+                        " bootstraps")
+plot_subtitle <- "Controlling for latitude"
+
+estimates_int_plot <- ggplot(data = bs_results, 
+                            mapping = aes(x = estimate_int)) +
+  geom_histogram() +
+  geom_vline(xintercept = 0.0, color = "red") +
+  xlab(label = "Effect size (days/year)") +
+  ylab(label = "Count") +
+  ggtitle(label = plot_title, subtitle = plot_subtitle) + 
+  theme_bw() +
+  theme(plot.title = element_text(size = 10))
+
+# Plot the results of bootstrapping with early dates
+emergences <- observations %>%
+  group_by(year = year(date)) %>%
+  summarise(early = min(yday(date), na.rm = TRUE),
+            n_obs = n())
+
+emergences_title <- paste0("Earliest observations, ", 
+                     min(year(observations$date)), " - ", 
+                     max(year(observations$date)))
+
+emergences_subtitle <- paste0("Bootstrapped trendlines, controlling for latitude")
+emergences_int_plot <- ggplot(data = emergences,
+                        mapping = aes(x = year, y = early)) +
+  geom_point() +
+  geom_abline(data = bs_results,
+              alpha = 5/globals$num_bs_reps,
+              mapping = aes(slope = bs_results$estimate_int, 
+                            intercept = bs_results$intercept_int)) +
+  xlab(label = "Year") +
+  ylab(label = "Day") +
+  ggtitle(emergences_title,
+          subtitle = emergences_subtitle) + 
+  theme_bw() +
+  theme(plot.title = element_text(size = 10),
+        plot.subtitle = element_text(size = 8))
+
+
 suppressMessages(expr = grid.arrange(estimates_plot, 
                                      emergences_plot, 
-                                     nrow = 1))
+                                     estimates_int_plot,
+                                     emergences_int_plot,
+                                     nrow = 2))
 ```
 
 ### Linear spline
@@ -423,8 +496,6 @@ wls_p_value <- formatC(x = wls_summary$coefficients[2, 4],
 wls_direction <- ifelse(wls_estimate < 0,
                         yes = "earlier",
                         no = "later")
-
-# TODO: add plot with line and CI's around the prediction
 
 wls_title <- "Weighted least squares"
 
@@ -455,6 +526,29 @@ wls_plot <- ggplot(data = earliest, mapping = aes(x = year)) +
   ggtitle(label = wls_title,
           subtitle = "Prediction with 95% confidence intervals")
 print(wls_plot)
+```
+
+```{r wls-complex}
+# A model including latitude
+earliest <- observations %>%
+  group_by(year = year(date)) %>%
+  mutate(n_obs = n(), yday = yday(date)) %>%
+  filter(yday == min(yday)) %>%
+  select(latitude, n_obs, yday, year)
+earliest <- as.data.frame(earliest)
+
+# Only latitude, no interaction
+# Latitude significant, year is not
+wls_complex <- lm(yday ~ year + latitude, data = earliest, weights = n_obs)
+wls_complex_summary <- summary(wls_complex)
+
+# Latitude with interaction term
+# Model is significant, but no coefficients are
+# NOTE: very high correlation between year & latitude (negative)
+wls_complex <- lm(yday ~ year + latitude + year * latitude, 
+                  data = earliest, 
+                  weights = n_obs)
+wls_complex_summary <- summary(wls_complex)
 ```
 
 ### Linear regression

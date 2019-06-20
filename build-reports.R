@@ -6,8 +6,12 @@
 rm(list = ls())
 
 ################################################################################
-species_data <- data.frame(genus = c("Pieris", "Cardamine", "Cardamine"),
-                           species = c("virginiensis", "concatenata", "diphylla"))
+# species_data <- data.frame(genus = c("Pieris", "Cardamine", "Cardamine"),
+#                            species = c("virginiensis", "concatenata", "diphylla"))
+
+# Small data frame, for testing
+species_data <- data.frame(genus = c("Pieris"),
+                           species = c("virginiensis"))
 
 # Would be nice to do this via lapply, but the below doesn't work as anticipated
 # reports <- lapply(X = species_data, 
