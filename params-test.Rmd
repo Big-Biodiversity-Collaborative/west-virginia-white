@@ -1,0 +1,25 @@
+---
+title: "params test"
+author: "Jeff Oliver"
+date: "6/19/2019"
+output: pdf_document
+params: 
+    genus_name: "FIXME"
+    species_name: "FIXME"
+    min_lon: -99
+    max_lon: -45
+    min_lat: 15
+    max_lat: 70
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+cat("## Params test")
+```
+
+Taxon: _`r params$genus_name` `r params$species_name`_  
+Longitude bounds: `r params$min_lon`, `r params$max_lon`  
+Latitude bounds: `r params$min_lat`, `r params$max_lat`  
