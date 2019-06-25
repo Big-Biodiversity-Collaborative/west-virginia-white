@@ -253,7 +253,12 @@ suppressMessages(expr = grid.arrange(map_plot,
                                      nrow = 1))
 ```
 
-Note in left-hand plot, darker points are from lower latitudes, while lighter points are from higher latitudes.
+Note in left-hand plot, **darker** points are from lower latitudes, while **lighter** points are from higher latitudes.
+
+
+## Summary
+The goal of this data exploration is to look at potential phenological shifts in a specialist insect and it's host plants. The first step is to see if there is a phenological shift, where the appearance of the insects and plants has changed through time. The first approach was to look at emergence times, or the earliest recorded observation for each year, to see if organisms are coming out earlier in the year. Some issues with sampling (i.e. there are more observations per year in more recent times) required some work arounds to avoid bias. I tried two approaches: linear regression with bootstrapping and weighted least-squares regression.
+
 
 # Test for change in emergences
 ## Bootstrapping
@@ -341,6 +346,8 @@ lm_report <- data.frame(model = c("simple", "complex"),
                         p_value = NA,
                         p_value_text = NA)
 
+lm_report$direction <- as.character(lm_report$direction)
+
 lm_report$estimate <- c(mean(bs_results$estimate),
                         mean(bs_results$estimate_int))
 
@@ -357,26 +364,13 @@ lm_report$p_value[2] <- ifelse(lm_report$estimate[2] < 0,
 lm_report$p_value_text <- paste0("= ", round(x = lm_report$p_value, digits = 3))
 lm_report$p_value_text[lm_report$p_value == 0] <- 
   paste0("< ", round(x = 1/globals$num_bs_reps, digits = 3))
-
-# mean_effect_size <- mean(bs_results$estimate)
-# direction <- ifelse(mean_effect_size < 0,
-#                     yes = "earlier",
-#                     no = "later")
-# p_value <- ifelse(mean_effect_size < 0,
-#                   yes = sum(bs_results$estimate > 0),
-#                   no = sum(bs_results$estimate < 0)) / globals$num_bs_reps
-# 
-# p_value_text <- paste0("= ", round(x = p_value, digits = 3))
-# if (p_value == 0) {
-#   p_value_text <- paste0("< ", round(x = 1/globals$num_bs_reps, digits = 3))
-# }
 ```
 
 For the simple model, only using year a the predictor, the mean change in emergence times was `r round(x = abs(lm_report$estimate[1]), digits = 3)` days `r lm_report$direction[1]` per year (p `r lm_report$p_value_text[1]`).
 
-When controlling for latitude and a year x latitude interacton, the mean change in emergence times was `r round(x = abs(lm_report$estimate[2]), digits = 3)` days `r lm_report$direction[2]` per year (p `r lm_report$p_value_text[2]`).
+Pretty cool, eh?
 
-```{r plot-bootstrap-lm, fig.height = 6}
+```{r plot-bootstrap-simple}
 # Plot the bootstrap results
 
 # Plot the coefficient estimates
@@ -393,7 +387,8 @@ estimates_plot <- ggplot(data = bs_results,
   ylab(label = "Count") +
   ggtitle(label = plot_title, subtitle = plot_subtitle) + 
   theme_bw() +
-  theme(plot.title = element_text(size = 10))
+  theme(plot.title = element_text(size = 10),
+        plot.subtitle = element_text(size = 8))
 
 # Plot the results of bootstrapping with early dates
 emergences <- observations %>%
@@ -421,6 +416,16 @@ emergences_plot <- ggplot(data = emergences,
   theme(plot.title = element_text(size = 10),
         plot.subtitle = element_text(size = 8))
 
+suppressMessages(expr = grid.arrange(estimates_plot, 
+                                     emergences_plot, 
+                                     nrow = 1))
+```
+
+**But**, when controlling for latitude and a year x latitude interacton, the mean change in emergence times was `r round(x = abs(lm_report$estimate[2]), digits = 3)` days `r lm_report$direction[2]` per year (p `r lm_report$p_value_text[2]`).
+
+Blech.  
+
+```{r plot-bootstrap-latitude}
 # Results from model including latitude
 # Plot the coefficient estimates
 plot_title <- paste0("Effect size from ",
@@ -436,7 +441,8 @@ estimates_int_plot <- ggplot(data = bs_results,
   ylab(label = "Count") +
   ggtitle(label = plot_title, subtitle = plot_subtitle) + 
   theme_bw() +
-  theme(plot.title = element_text(size = 10))
+  theme(plot.title = element_text(size = 10),
+        plot.subtitle = element_text(size = 8))
 
 # Plot the results of bootstrapping with early dates
 emergences <- observations %>%
@@ -465,14 +471,14 @@ emergences_int_plot <- ggplot(data = emergences,
         plot.subtitle = element_text(size = 8))
 
 
-suppressMessages(expr = grid.arrange(estimates_plot, 
-                                     emergences_plot, 
-                                     estimates_int_plot,
+suppressMessages(expr = grid.arrange(estimates_int_plot,
                                      emergences_int_plot,
-                                     nrow = 2))
+                                     nrow = 1))
 ```
 
+<!--
 ### Linear spline
+-->
 ## Weighted least-squares regression
 ```{r wls-linear}
 # Pull out eariest date for each year, as well as number of observations for 
@@ -512,7 +518,6 @@ wls_plot <- ggplot(data = earliest, mapping = aes(x = year)) +
   geom_point(mapping = aes(y = early)) +
   geom_line(mapping = aes(y = lwr), color = "red") +
   geom_line(mapping = aes(y = upr), color = "red") +
-  # geom_abline(data = NULL, slope = wls_slope, intercept = wls_intercept) +
   geom_segment(mapping = aes(x = min(year), 
                              xend = max(year),
                              y = (wls_intercept + min(year) * wls_slope),
@@ -545,16 +550,75 @@ wls_complex_summary <- summary(wls_complex)
 # Latitude with interaction term
 # Model is significant, but no coefficients are
 # NOTE: very high correlation between year & latitude (negative)
-wls_complex <- lm(yday ~ year + latitude + year * latitude, 
+wls_complex_interaction <- lm(yday ~ year + latitude + year * latitude, 
                   data = earliest, 
                   weights = n_obs)
-wls_complex_summary <- summary(wls_complex)
+wls_complex_interaction_summary <- summary(wls_complex_interaction)
 ```
 
 ### Linear regression
+#### Simple model (excluding latitude)
 In weighted least-squares regression, using a simple linear model with observations weighted by the number of observations in that year, the effect size was `r round(x = abs(wls_estimate), digits = 3)` days `r wls_direction` per year (p = `r wls_p_value`).
 
+#### Complex model
+When including latitude or latitude and the year x latitude interaction, the effect of year on emergence day becomes non-significant. The model with no interaction:
+
+$$
+Earliest \enspace observation \enspace day_i = \beta_1 Year_i + \beta_2 Latitude_i + \epsilon_i
+$$
+
+Results from weighted least-squares:
+
+```{r}
+summary(wls_complex)
+```
+
+Model with interaction term:
+
+$$
+Earliest \enspace observation \enspace day_i = \beta_1 Year_i + \beta_2 Latitude_i + \beta_3 Year_i \times Latitude_i + \epsilon_i
+$$
+
+Results from weighted least-squares:
+
+```{r}
+summary(wls_complex_interaction)
+```
+
+## Flight in general
+What about looking not at earliest emergences, but at flights in general?
+
+
+```{r flights-latitude}
+obs <- observations %>%
+  mutate(yday = yday(date),
+         year = year(date)) %>%
+  select(latitude, yday, year)
+
+lat_model <- lm(yday ~ year + latitude + year*latitude, data = obs)
+
+model_intercept <- summary(lat_model)$coefficients[1, 1]
+model_year_slope <- summary(lat_model)$coefficients[2, 1]
+
+lat_plot <- ggplot(data = obs, mapping = aes(x = year, y = yday, color = latitude)) +
+  geom_point() +
+  ylab(label = "Julian Day") +
+  xlab(label = "Year") +
+  scale_color_gradient() +
+  theme_bw()
+
+print(lat_plot)
+```
+
+In the linear model, year is significant, along with latitude and the latitude x year interaction:
+```{r lat-model-summary}
+summary(lat_model)
+```
+
 ### Linear spline
+
+Yeah, it would be cool to try a linear spline, but not until I figure out a better way of dealing with latitude.
+
 ```{r wls-spline}
 # Testing smoothing spline
 # TODO: probably want to find a way to do a linear spline
