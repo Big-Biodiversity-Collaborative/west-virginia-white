@@ -1,0 +1,678 @@
+---
+title: "Pieris virginiensis progress report 02"
+author: "Jeff Oliver"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: pdf_document
+geometry: margin=0.75in
+params: 
+    genus_name: "Pieris"
+    species_name: "virginiensis"
+    min_lon: -99
+    max_lon: -45
+    min_lat: 15
+    max_lat: 70
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, fig.height = 3)
+suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages(library(lubridate))
+suppressPackageStartupMessages(library(parallel))
+suppressPackageStartupMessages(library(gridExtra))
+suppressPackageStartupMessages(library(ggmap))
+```
+
+```{r data-entry}
+genus_name <- params$genus_name
+species_name <- params$species_name
+long_limits <- c(params$min_lon, params$max_lon)
+lat_limits <- c(params$min_lat, params$max_lat)
+
+# Path to folder that contains retrieval script, get_clean_obs_function.R
+retrieval_path <- "../insect_migration/scripts/"
+retrieval_name <- "get_clean_obs_function.R"
+```
+
+```{r check-values, results = "asis", warning = FALSE}
+# Keep track of whether a report can be assembled after the setup-check
+continue_knitting <- TRUE
+
+# Seems excessive...
+if (file.exists("scripts/global_values.R")) {
+  source(file = "scripts/global_values.R")
+  globals <- global_values()
+} else {
+  cat("\n## Missing global values script\n")
+  cat("Make sure scripts/global_values.R exists")
+  continue_knitting <- FALSE
+}
+
+# Make sure retrieval_path has trailing /
+if (substr(x = retrieval_path, start = nchar(retrieval_path), stop = nchar(retrieval_path)) != "/") {
+  retrieval_path <- paste0(retrieval_path, "/")
+}
+
+# Check to make sure get_clean_obs_function exists
+if (!file.exists(paste0(retrieval_path, retrieval_name))) {
+  cat("\n\n## Missing required function `get_clean_obs_function`\n")
+  cat("Please check `retrieval_path` setting in `data-entry` chunk of Rmarkdown file. The function can be obtained from GitHub via `git clone https://github.com/keatonwilson/insect_migration.git`\n")
+  continue_knitting <- FALSE
+}
+
+if ("FIXME" %in% c(species_name, genus_name)) {
+  cat("\n## `FIXME` values need to be changed in `data-entry` chunk of Rmarkdown file.\n")
+  continue_knitting <- FALSE
+}
+
+if (any(is.na(c(long_limits, lat_limits)))) {
+  cat("\n## `NA` values need to be changed in `data-entry` chunk of Rmarkdown file.\n")
+  continue_knitting <- FALSE
+}
+
+required_pkgs <- c("tidyverse", "spocc", "mapr")
+missing_pkgs <- c()
+for (pkg in required_pkgs) {
+  if (!suppressPackageStartupMessages(library(package = pkg, logical.return = TRUE, character.only = TRUE))) {
+    missing_pkgs <- c(missing_pkgs, pkg)
+  }
+}
+if (length(missing_pkgs) > 0) { 
+  cat("\n## Missing one or more required libraries.\n")
+  cat("Please install the following package(s): ", paste(missing_pkgs, collapse = ", "), ".\n", sep = "")
+  continue_knitting <- FALSE
+}
+```
+
+```{r status-check-setup}
+# If there are problems at this point, don't bother evaluating the rest of the 
+# document
+if (!continue_knitting) {
+  knitr::knit_exit()
+}
+```
+
+# Introduction
+The general question to address is whether a specialist insect and its host plant(s) are responding to climate change in similar ways or the insect and plants have different phenological responses to climate change. i.e.
+
+```{r two-hypotheses}
+similar_response <- data.frame(taxon = c("Insect", "Insect", "Plant", "Plant"),
+                               year = c(1960, 2020, 1960, 2020),
+                               yday = c(130, 115, 125, 110))
+
+different_response <- data.frame(taxon = c("Insect", "Insect", "Plant", "Plant"),
+                               year = c(1960, 2020, 1960, 2020),
+                               yday = c(130, 105, 125, 120))
+
+similar_plot <- ggplot(data = similar_response, mapping = aes(x = year, y = yday, color = taxon, group = taxon)) +
+  geom_line() +
+  xlab(label = "Year") +
+  ylab(label = "Julian Day") +
+  ggtitle(label = "Similar responses") + 
+  ylim(c(90, 150)) +
+  scale_color_manual(name = "Taxon", values = c("coral4", "forestgreen")) +
+  theme_bw() +
+  theme(legend.position = c(0.8, 0.8))
+
+
+different_plot <- ggplot(data = different_response, mapping = aes(x = year, y = yday, color = taxon, group = taxon)) +
+  geom_line() +
+  xlab(label = "Year") +
+  ylab(label = "Julian Day") +
+  ggtitle(label = "Different responses") + 
+  ylim(c(90, 150)) +
+  scale_color_manual(name = "Taxon", values = c("coral4", "forestgreen")) +
+  theme_bw() + 
+  theme(legend.position = "none")
+
+suppressMessages(expr = grid.arrange(similar_plot, 
+                                     different_plot, 
+                                     nrow = 1))
+```
+
+
+The first step is to see if there is a phenological shift, where the appearance of the insects and plants has changed through time. The first approach was to look at emergence times, or the earliest recorded observation for each year, to see if organisms are coming out earlier in the year. Some issues with sampling (i.e. there are more observations per year in more recent times) required some work arounds to avoid bias. I tried two approaches: linear regression with bootstrapping and weighted least-squares regression.
+
+## Data for _`r paste(genus_name, species_name, sep = " ")`_
+
+```{r download-data, include = FALSE}
+# Use include = FALSE to suppress warning messages
+source(file = paste0(retrieval_path, retrieval_name))
+
+data_file <- paste0("data/", genus_name, "-", species_name, "-spocc.csv")
+
+# Load in data, if they exist on disk. If not, download via spocc
+if (file.exists(data_file)) {
+  observations <- read_csv(file = data_file)
+} else {
+  observations <- get_clean_obs(genus = genus_name, 
+                                species = species_name, 
+                                lonlim = long_limits, 
+                                latlim = lat_limits)
+}
+
+# Check for zero observations retrieved
+if (nrow(observations) > 0) {
+  write_csv(x = observations, path = data_file)
+  check_name <- FALSE
+  if (nrow(observations[observations$prov == "gbif", ]) == 0) {
+    cat("\n### Note: zero records were returned from GBIF\n")
+    check_name <- TRUE
+  }
+  if (nrow(observations[observations$prov == "inat", ]) == 0) {
+    cat("\n### Note: zero records were returned from iNaturalist\n")
+    check_name <- TRUE
+  }
+  if (check_name) {
+    cat("Please check to see if _", genus_name, " ", species_name, 
+        "_ is the name used for the data provider.\n")
+  }
+} else {
+  cat("\n## No records returned for _", genus_name, " ", species_name, "_.\n")
+  cat("Check to be sure names are spelled correctly and iNat and GBIF servers are responsive")
+  continue_knitting <- FALSE
+}
+```
+
+```{r status-check-data}
+# If there are problems at this point, don't bother evaluating the rest of the 
+# document
+if (!continue_knitting) {
+  knitr::knit_exit()
+}
+```
+
+Retrieval from iNaturalist and GBIF returned `r nrow(observations)` observations.
+
+```{r data-cleaning}
+# Restrict to the days and years of interest
+observations <- observations %>%
+  filter(!is.na(date),
+         yday(x = date) >= globals$min_julian,
+         yday(x = date) <= globals$max_julian,
+         year(x = date) >= globals$min_year,
+         year(x = date) <= globals$max_year)
+
+if (nrow(observations) == 0) {
+  cat("\n## Zero observations remain after date filtering.\n")
+  cat("Current filters only include ", globals$min_year, "-", globals$max_year)
+  cat(" and julian days ", globals$min_julian, "-", globals$max_julian, ".\n")
+  continue_knitting <- FALSE
+}
+```
+
+```{r status-check-cleaning}
+# If there are problems at this point, don't bother evaluating the rest of the 
+# document
+if (!continue_knitting) {
+  knitr::knit_exit()
+}
+```
+
+```{r meet-minimums}
+# Calculate which years meet the minimum number of required samples
+year_counts <- observations %>%  
+  group_by(year = year(date)) %>%
+  summarize(obs_count = n()) %>%
+  filter(obs_count >= globals$minimum_required)
+
+# Filter obserations to only include those years with enough samples
+observations <- observations %>%
+  filter(year(date) %in% year_counts$year)
+
+if (nrow(observations) == 0) {
+  cat("\n## Zero observations remain after removing years with too few observations\n")
+  cat("Current filter requires at least ", globals$minimum_required, 
+      " observations per year", ".\n")
+  continue_knitting <- FALSE
+}
+```
+
+```{r status-check-minimums}
+# If there are problems at this point, don't bother evaluating the rest of the 
+# document
+if (!continue_knitting) {
+  knitr::knit_exit()
+}
+```
+
+
+Distribution of _`r paste(genus_name, species_name, sep = " ")`_ data for `r min(year(observations$date))` - `r max(year(observations$date))` (total of `r nrow(observations)` observations following date and sample size filtering):
+
+```{r plot-data, include = FALSE, fig.height = 2.5}
+# include = FALSE to prevent ggmap::get_map messages from showing up in output
+# Plot a map of observations post-filtering
+
+# Only download map files if we haven't already
+map_file <- data_file <- paste0("data/maps/", genus_name, "-", species_name, "-map.RData")
+
+if (file.exists(map_file)) {
+  load(file = map_file)
+} else {
+  # Get a map image
+  # Have to provide min/max for lat and long, otherwise will assume Google map,
+  # regardless of value sent to source parameter
+  map_bounds <- c(floor(min(observations$longitude)),
+                floor(min(observations$latitude)),
+                ceiling(max(observations$longitude)),
+                ceiling(max(observations$latitude)))
+
+  obs_map <- get_map(location = map_bounds,
+                     source = "stamen",
+                     maptype = "terrain")
+  save(obs_map, file = map_file)
+}
+
+map_plot <- ggmap(ggmap = obs_map) +
+  geom_point(data = observations,
+             mapping = aes(x = longitude, y = latitude),
+             size = 1.0) +
+  theme_bw() +
+  ylab(label = "Latitude") +
+  xlab(label = "Longitude")
+
+# Plot observations by year
+obs_plot <- ggplot(data = observations,
+                   mapping = aes(x = year(date),
+                                 y = yday(date),
+                                 color = latitude)) +
+  geom_point() +
+  xlab(label = "Year") +
+  scale_color_gradient(name = "Latitude") +
+  ylab(label = "Day") +
+  theme_bw() +
+  theme(legend.position = "none", #c(0.12, 0.8),
+        legend.background = element_rect(size = 1.5),
+        legend.title = element_text(size = 6),
+        legend.text = element_text(size = 6),
+        legend.key.size = unit(x = 0.7, units = "line"))
+
+```
+
+```{r draw-observation-plots}
+# Two-panel plot of map and time
+suppressMessages(expr = grid.arrange(map_plot, 
+                                     obs_plot, 
+                                     nrow = 1))
+```
+
+Note in left-hand plot, **darker** points are from lower latitudes, while **lighter** points are from higher latitudes.
+
+# Test for change in emergences
+## Bootstrapping
+```{r bootstrap-linear-regression}
+# A data frame we'll use as template for storing bootstrapped data
+bootstrapped_df <- data.frame(year = rep(year_counts$year, 
+                                         times = globals$bs_sample_size),
+                              yday = NA,
+                              latitude = NA,
+                              longitude = NA)
+
+
+# Set up parallel processing
+num_cores <- detectCores() - 1
+
+# Initiate cluster
+the_cluster <- makeCluster(num_cores)
+
+# Need to explicitly load packages in cluster; invisible the only way to prevent
+# output created by loading tidyverse on cores
+invisible(x = clusterEvalQ(cl = the_cluster, { library(tidyverse); library(lubridate) }))
+
+bs_results <- parLapply(cl = the_cluster,
+                        X = c(1:globals$num_bs_reps),
+                        # X is passed into the i argument below
+                        fun = function(i, bs_df, sample_df, sample_size) {
+                          # Fill in data bootstrapped for each year, sampling
+                          # *only* from sample_vec, and restricting sample 
+                          # size of each year to sample_size
+                          for (yr in unique(bs_df$year)) {
+                            # Subset the dataframe to only year of interest
+                            subset_df <- sample_df[year(sample_df$date) == yr, ]
+                            # Identify the rows to draw data from
+                            sample_rows <- sample(x = 1:nrow(subset_df),
+                                                  size = sample_size,
+                                                  replace = FALSE)
+                            # Add data to appropriate columns of bs_df
+                            bs_df$yday[bs_df$year == yr] <- yday(subset_df$date[sample_rows])
+                            bs_df$longitude[bs_df$year == yr] <- subset_df$longitude[sample_rows]
+                            bs_df$latitude[bs_df$year == yr] <- subset_df$latitude[sample_rows]
+                          }
+                          
+                          # Extract rows with minimum value for each year
+                          bs_mins <- bs_df %>%
+                            group_by(year) %>%
+                            filter(yday == min(yday))
+                          
+                          # Simple model, only year as predictor
+                          bs_lm <- lm(yday ~ year, data = bs_mins)
+                          coeff_est <- summary(bs_lm)$coefficients[2, 1]
+                          intercept <- summary(bs_lm)$coefficients[1, 1]
+                          p_value <- summary(bs_lm)$coefficients[2, 4]
+                          
+                          # Model with year, latitude & interaction
+                          bs_lm_int <- lm(yday ~ year + latitude + year * latitude, 
+                                          data = bs_mins)
+                          coeff_est_int <- summary(bs_lm_int)$coefficients[2, 1]
+                          intercept_int <- summary(bs_lm_int)$coefficients[1, 1]
+                          p_value_int <- summary(bs_lm_int)$coefficients[2, 4]
+
+                          return(data.frame(bs_rep = i,
+                                            estimate = coeff_est,
+                                            intercept = intercept,
+                                            p_value = p_value,
+                                            estimate_int = coeff_est_int,
+                                            intercept_int = intercept_int,
+                                            p_value_int = p_value_int))
+                        },
+                        bs_df = bootstrapped_df,
+                        sample_df = observations,
+                        sample_size = globals$bs_sample_size)
+
+stopCluster(the_cluster)
+# Need to convert vanilla list into data frame
+bs_results <- do.call(rbind, bs_results)
+```
+
+### Linear regression
+#### Simple model
+```{r lm-reporting}
+# Data frame to hold values for reporting out
+lm_report <- data.frame(model = c("simple", "complex"),
+                        estimate = NA,
+                        direction = "earlier",
+                        p_value = NA,
+                        p_value_text = NA)
+
+lm_report$direction <- as.character(lm_report$direction)
+
+lm_report$estimate <- c(mean(bs_results$estimate),
+                        mean(bs_results$estimate_int))
+
+lm_report$direction[lm_report$estimate > 0] <- "later"
+
+# Ugly
+lm_report$p_value[1] <- ifelse(lm_report$estimate[1] < 0,
+                            yes = sum(bs_results$estimate > 0),
+                            no = sum(bs_results$estimate < 0)) / globals$num_bs_reps
+lm_report$p_value[2] <- ifelse(lm_report$estimate[2] < 0,
+                            yes = sum(bs_results$estimate_int > 0),
+                            no = sum(bs_results$estimate_int < 0)) / globals$num_bs_reps
+
+lm_report$p_value_text <- paste0("= ", round(x = lm_report$p_value, digits = 3))
+lm_report$p_value_text[lm_report$p_value == 0] <- 
+  paste0("< ", round(x = 1/globals$num_bs_reps, digits = 3))
+```
+
+For the simple model, only using year as the predictor, the mean change in emergence times was `r round(x = abs(lm_report$estimate[1]), digits = 3)` days `r lm_report$direction[1]` per year (p `r lm_report$p_value_text[1]`).
+
+Pretty cool, eh?
+
+```{r plot-bootstrap-simple}
+# Plot the bootstrap results
+
+# Plot the coefficient estimates
+plot_title <- paste0("Effect size from ",
+                        globals$num_bs_reps,
+                        " bootstraps")
+plot_subtitle <- "Simple model"
+
+estimates_plot <- ggplot(data = bs_results, 
+                            mapping = aes(x = estimate)) +
+  geom_histogram() +
+  geom_vline(xintercept = 0.0, color = "red") +
+  xlab(label = "Effect size (days/year)") +
+  ylab(label = "Count") +
+  ggtitle(label = plot_title, subtitle = plot_subtitle) + 
+  theme_bw() +
+  theme(plot.title = element_text(size = 10),
+        plot.subtitle = element_text(size = 8))
+
+# Plot the results of bootstrapping with early dates
+emergences <- observations %>%
+  group_by(year = year(date)) %>%
+  summarise(early = min(yday(date), na.rm = TRUE),
+            n_obs = n())
+
+emergences_title <- paste0("Earliest observations, ", 
+                     min(year(observations$date)), " - ", 
+                     max(year(observations$date)))
+
+emergences_subtitle <- paste0("Bootstrapped trendlines, simple model ")
+emergences_plot <- ggplot(data = emergences,
+                        mapping = aes(x = year, y = early)) +
+  geom_point() +
+  geom_abline(data = bs_results,
+              alpha = 5/globals$num_bs_reps,
+              mapping = aes(slope = bs_results$estimate, 
+                            intercept = bs_results$intercept)) +
+  xlab(label = "Year") +
+  ylab(label = "Julian Day") +
+  ggtitle(emergences_title,
+          subtitle = emergences_subtitle) + 
+  theme_bw() +
+  theme(plot.title = element_text(size = 10),
+        plot.subtitle = element_text(size = 8))
+
+suppressMessages(expr = grid.arrange(estimates_plot, 
+                                     emergences_plot, 
+                                     nrow = 1))
+```
+
+**But**, when controlling for latitude and a year x latitude interacton, the mean change in emergence times was `r round(x = abs(lm_report$estimate[2]), digits = 3)` days `r lm_report$direction[2]` per year, but not significant (p `r lm_report$p_value_text[2]`).
+
+Blech.  
+
+```{r plot-bootstrap-latitude}
+# Results from model including latitude
+# Plot the coefficient estimates
+plot_title <- paste0("Effect size from ",
+                        globals$num_bs_reps,
+                        " bootstraps")
+plot_subtitle <- "Controlling for latitude"
+
+estimates_int_plot <- ggplot(data = bs_results, 
+                            mapping = aes(x = estimate_int)) +
+  geom_histogram() +
+  geom_vline(xintercept = 0.0, color = "red") +
+  xlab(label = "Effect size (days/year)") +
+  ylab(label = "Count") +
+  ggtitle(label = plot_title, subtitle = plot_subtitle) + 
+  theme_bw() +
+  theme(plot.title = element_text(size = 10),
+        plot.subtitle = element_text(size = 8))
+
+# Plot the results of bootstrapping with early dates
+emergences <- observations %>%
+  group_by(year = year(date)) %>%
+  summarise(early = min(yday(date), na.rm = TRUE),
+            n_obs = n())
+
+emergences_title <- paste0("Earliest observations, ", 
+                     min(year(observations$date)), " - ", 
+                     max(year(observations$date)))
+
+emergences_subtitle <- paste0("Bootstrapped trendlines, controlling for latitude")
+emergences_int_plot <- ggplot(data = emergences,
+                        mapping = aes(x = year, y = early)) +
+  geom_point() +
+  geom_abline(data = bs_results,
+              alpha = 5/globals$num_bs_reps,
+              mapping = aes(slope = bs_results$estimate_int, 
+                            intercept = bs_results$intercept_int)) +
+  xlab(label = "Year") +
+  ylab(label = "Julian Day") +
+  ggtitle(emergences_title,
+          subtitle = emergences_subtitle) + 
+  theme_bw() +
+  theme(plot.title = element_text(size = 10),
+        plot.subtitle = element_text(size = 8))
+
+
+suppressMessages(expr = grid.arrange(estimates_int_plot,
+                                     emergences_int_plot,
+                                     nrow = 1))
+```
+
+<!--
+### Linear spline
+-->
+## Weighted least-squares regression
+```{r wls-linear}
+# Pull out eariest date for each year, as well as number of observations for 
+# that year; the number of observations will be used as the weight for that year
+earliest <- observations %>%
+  group_by(year = year(date)) %>%
+  mutate(n_obs = n(), yday = yday(date)) %>%
+  filter(yday == min(yday)) %>%
+  select(latitude, n_obs, yday, year)
+earliest <- as.data.frame(earliest)
+colnames(earliest)[3] <- "early"
+
+# earliest <- observations %>%
+#   group_by(year = year(date)) %>%
+#   summarize(early = min(x = yday(date)),
+#             n_obs = n())
+# earliest <- as.data.frame(earliest)
+
+# Use number of observations as weight for each year
+wls_model <- lm(early ~ year, data = earliest, weights = n_obs)
+wls_summary <- summary(wls_model)
+wls_estimate <- wls_summary$coefficients[2, 1]
+
+# Only want to show 3 digits without rounding to 0
+wls_p_value <- formatC(x = wls_summary$coefficients[2, 4],
+                       digits = 3,
+                       format = "e")
+
+wls_direction <- ifelse(wls_estimate < 0,
+                        yes = "earlier",
+                        no = "later")
+
+wls_title <- "Weighted least squares"
+
+# Use predict.lm to get confidence interval of the model
+wls_predict <- predict(wls_model, 
+                       interval = "confidence",
+                       weights = earliest$n_obs)
+earliest$lwr <- wls_predict[, "lwr"]
+earliest$upr <- wls_predict[, "upr"]
+wls_slope <- wls_summary$coefficients[2, 1]
+wls_intercept <- wls_summary$coefficients[1, 1]
+
+wls_plot <- ggplot(data = earliest, mapping = aes(x = year)) +
+  geom_point(mapping = aes(y = early, color = latitude)) +
+  scale_color_gradient(name = "Latitude") +
+  geom_line(mapping = aes(y = lwr), color = "red") +
+  geom_line(mapping = aes(y = upr), color = "red") +
+  geom_segment(mapping = aes(x = min(year), 
+                             xend = max(year),
+                             y = (wls_intercept + min(year) * wls_slope),
+                             yend = (wls_intercept + max(year) * wls_slope)),
+               color = "black",
+               linetype = "solid",
+               size = 0.2) +
+  ylab("Julian Day") + 
+  xlab("Year") +
+  theme_bw() +
+  ggtitle(label = wls_title,
+          subtitle = "Prediction with 95% confidence intervals")
+print(wls_plot)
+```
+
+```{r wls-complex}
+# A model including latitude
+
+# Only latitude, no interaction
+# Latitude significant, year is not
+wls_complex <- lm(early ~ year + latitude, data = earliest, weights = n_obs)
+wls_complex_summary <- summary(wls_complex)
+
+# Latitude with interaction term
+# Model is significant, but no coefficients are
+# NOTE: very high correlation between year & latitude (negative)
+wls_complex_interaction <- lm(early ~ year + latitude + year * latitude, 
+                  data = earliest, 
+                  weights = n_obs)
+wls_complex_interaction_summary <- summary(wls_complex_interaction)
+
+wls_complex_results <- data.frame(year_est = c(wls_complex_summary$coefficients[2, 1],
+                                               wls_complex_interaction_summary$coefficients[2, 1]),
+                                  lat_est = c(wls_complex_summary$coefficients[3, 1],
+                                              wls_complex_interaction_summary$coefficients[3, 1]),
+                                  year_p = c(wls_complex_summary$coefficients[2, 4],
+                                             wls_complex_interaction_summary$coefficients[2, 4]))
+```
+
+### Linear regression
+#### Simple model (excluding latitude)
+In weighted least-squares regression, using a simple linear model with observations weighted by the number of observations in that year, the effect size was `r round(x = abs(wls_estimate), digits = 3)` days `r wls_direction` per year (p = `r wls_p_value`).
+
+#### Complex model (including latitude)
+When including latitude or latitude and the year x latitude interaction, the effect of year on emergence day becomes non-significant. The model with no interaction:
+
+$$
+Earliest \enspace observation \enspace day_i = \beta_1 Year_i + \beta_2 Latitude_i + \epsilon_i
+$$
+
+The effect of year on earliest emergence is `r round(wls_complex_results$year_est[1], digits = 3)` days per year (p = `r round(wls_complex_results$year_p[1], digits = 3)`). Latitude has a significant effect of `r round(wls_complex_results$lat_est[1], digits = 3)` days per degree. When the latitude $\times$ year interaction term is included:
+$$
+Earliest \enspace observation \enspace day_i = \beta_1 Year_i + \beta_2 Latitude_i + \beta_3 Year_i \times Latitude_i + \epsilon_i
+$$
+
+The model is significant, but no one coefficient is significant (year: `r round(wls_complex_results$year_est[2], digits = 3)` days per year; latitute: `r round(wls_complex_results$lat_est[1], digits = 3)` days per degree).
+
+## Flight in general
+What about looking not at earliest emergences, but at flights in general?
+
+```{r flights-latitude}
+obs <- observations %>%
+  mutate(yday = yday(date),
+         year = year(date)) %>%
+  select(latitude, yday, year)
+
+lat_model <- lm(yday ~ year + latitude + year*latitude, data = obs)
+lat_model_coeffs <- summary(lat_model)$coefficients
+
+lat_model_coeffs <- round(lat_model_coeffs, digits = 3)
+
+model_intercept <- summary(lat_model)$coefficients[1, 1]
+model_year_slope <- summary(lat_model)$coefficients[2, 1]
+
+lat_plot <- ggplot(data = obs, mapping = aes(x = year, y = yday, color = latitude)) +
+  geom_point() +
+  ylab(label = "Julian Day") +
+  xlab(label = "Year") +
+  scale_color_gradient() +
+  theme_bw()
+
+print(lat_plot)
+```
+
+In the linear model, year is significant, along with latitude and the latitude x year interaction:
+
+| Predictor              | Effect | p |
+|:-----------------------|:------:|--:|
+| Year                   | `r lat_model_coeffs[2, 1]` | `r lat_model_coeffs[2, 4]` |
+| Latitude               | `r lat_model_coeffs[3, 1]` | `r lat_model_coeffs[3, 4]` |
+| Year $\times$ Latitude | `r lat_model_coeffs[4, 1]` | `r lat_model_coeffs[4, 4]` |
+
+## So
+
+The question is, would analyzing the entire flight, not just earliest emergence times, apply to the two hypotheses of interest?
+
+**OR**
+
+Is there a better way of dealing with latitude in these models, especially when the sample size of just looking at earliest flight times will be relatively small (i.e. $N =$ `r nrow(earliest)`)? Would binning latitudes help?
+
+<!--
+### Linear spline
+-->
+
+```{r wls-spline, eval = FALSE}
+# Testing smoothing spline
+# TODO: probably want to find a way to do a linear spline
+spline_model <- smooth.spline(x = earliest$year,
+                              y = earliest$early,
+                              w = earliest$n_obs,
+                             nknots = 4) # <=3 produces errors
+```
