@@ -22,6 +22,18 @@ suppressPackageStartupMessages(library(gridExtra))
 suppressPackageStartupMessages(library(ggmap))
 ```
 
+Questions:
+1. What about a mixed-effect model, including latitude as a random effect?
+    1. Random intercept model
+    2. Random incercept and random slope model
+        + Implies that responses to climate change are different between the 
+        different latitudes
+2. Should the variables be standardized?
+3. What about bootstrapping "bands" of latitudes? This is a sort of manual way 
+of controlling for the effect of latitude on first emergences.
+4. Why are effect sizes between bootstrapping approach and weighted least-
+squares approach so different (c. 0.33 vs. 0.6, respectively)?
+
 ```{r data-entry}
 genus_name <- params$genus_name
 species_name <- params$species_name
