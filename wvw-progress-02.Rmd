@@ -23,11 +23,14 @@ suppressPackageStartupMessages(library(ggmap))
 ```
 
 Questions:
+
 1. What about a mixed-effect model, including latitude as a random effect?
     1. Random intercept model
     2. Random incercept and random slope model
         + Implies that responses to climate change are different between the 
         different latitudes
+    3. **UPDATE**: It would have to be binned latitudes to include as random
+    effect
 2. Should the variables be standardized?
 3. What about bootstrapping "bands" of latitudes? This is a sort of manual way 
 of controlling for the effect of latitude on first emergences.
