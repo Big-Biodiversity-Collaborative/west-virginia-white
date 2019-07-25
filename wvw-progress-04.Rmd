@@ -1,0 +1,295 @@
+---
+title: "Pieris virginiensis progress report 04"
+author: "Jeff Oliver"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: pdf_document
+geometry: margin=0.75in
+params: 
+    min_lon: -99
+    max_lon: -45
+    min_lat: 15
+    max_lat: 70
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, fig.height = 3)
+suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages(library(lubridate))
+suppressPackageStartupMessages(library(parallel))
+suppressPackageStartupMessages(library(gridExtra))
+suppressPackageStartupMessages(library(ggmap))
+```
+
+
+```{r data-entry}
+# Will want to create two data frames: one with insect and one with host(s) 
+species <- data.frame(genus = c("Pieris", "Cardamine", "Cardamine"),
+                      species = c("virginiensis", "concatenata", "diphylla"),
+                      category = c("insect", "host", "host"),
+                      stringsAsFactors = FALSE)
+
+long_limits <- c(params$min_lon, params$max_lon)
+lat_limits <- c(params$min_lat, params$max_lat)
+
+# Path to folder that contains retrieval script, get_clean_obs_function.R
+retrieval_path <- "../insect_migration/scripts/"
+retrieval_name <- "get_clean_obs_function.R"
+```
+
+```{r check-values, results = "asis", warning = FALSE}
+# Keep track of whether a report can be assembled after the setup-check
+continue_knitting <- TRUE
+
+# Seems excessive...
+if (file.exists("scripts/global_values.R")) {
+  source(file = "scripts/global_values.R")
+  globals <- global_values()
+} else {
+  cat("\n## Missing global values script\n")
+  cat("Make sure scripts/global_values.R exists")
+  continue_knitting <- FALSE
+}
+
+# Make sure retrieval_path has trailing /
+if (substr(x = retrieval_path, start = nchar(retrieval_path), stop = nchar(retrieval_path)) != "/") {
+  retrieval_path <- paste0(retrieval_path, "/")
+}
+
+# Check to make sure get_clean_obs_function exists
+if (!file.exists(paste0(retrieval_path, retrieval_name))) {
+  cat("\n\n## Missing required function `get_clean_obs_function`\n")
+  cat("Please check `retrieval_path` setting in `data-entry` chunk of Rmarkdown file. The function can be obtained from GitHub via `git clone https://github.com/keatonwilson/insect_migration.git`\n")
+  continue_knitting <- FALSE
+}
+
+if (any(is.na(c(long_limits, lat_limits)))) {
+  cat("\n## `NA` values need to be changed in `data-entry` chunk of Rmarkdown file.\n")
+  continue_knitting <- FALSE
+}
+
+required_pkgs <- c("tidyverse", "spocc", "mapr")
+missing_pkgs <- c()
+for (pkg in required_pkgs) {
+  if (!suppressPackageStartupMessages(library(package = pkg, logical.return = TRUE, character.only = TRUE))) {
+    missing_pkgs <- c(missing_pkgs, pkg)
+  }
+}
+if (length(missing_pkgs) > 0) { 
+  cat("\n## Missing one or more required libraries.\n")
+  cat("Please install the following package(s): ", paste(missing_pkgs, collapse = ", "), ".\n", sep = "")
+  continue_knitting <- FALSE
+}
+```
+
+```{r status-check-setup}
+# If there are problems at this point, don't bother evaluating the rest of the 
+# document
+if (!continue_knitting) {
+  knitr::knit_exit()
+}
+```
+
+```{r download-data, results = "asis", include = FALSE}
+# Use include = FALSE to suppress warning messages
+source(file = paste0(retrieval_path, retrieval_name))
+
+all_obs <- NULL
+
+for (i in 1:nrow(species)) {
+  genus_name <- species$genus[i]
+  species_name <- species$species[i]
+  category <- species$category[i]
+  
+  data_file <- paste0("data/", genus_name, "-", species_name, "-spocc.csv")
+  
+  # Load in data, if they exist on disk. If not, download via spocc
+  if (file.exists(data_file)) {
+    observations <- read_csv(file = data_file)
+  } else {
+    observations <- get_clean_obs(genus = genus_name, 
+                                  species = species_name, 
+                                  lonlim = long_limits, 
+                                  latlim = lat_limits)
+    
+    # Check for zero observations retrieved
+    if (nrow(observations) > 0) {
+      write_csv(x = observations, path = data_file)
+      check_name <- FALSE
+      if (nrow(observations[observations$prov == "gbif", ]) == 0) {
+        cat("\n### Note: zero records were returned from GBIF\n")
+        check_name <- TRUE
+      }
+      if (nrow(observations[observations$prov == "inat", ]) == 0) {
+        cat("\n### Note: zero records were returned from iNaturalist\n")
+        check_name <- TRUE
+      }
+      if (check_name) {
+        cat("Please check to see if _", genus_name, " ", species_name, 
+            "_ is the name used for the data provider.\n")
+      }
+    } else {
+      cat("\n## No records returned for _", genus_name, " ", 
+          species_name, "_.\n")
+      cat("Check to be sure names are spelled correctly and iNat and GBIF servers are responsive")
+      continue_knitting <- FALSE
+    }
+  }
+  
+  # Add genus and species columns to the data
+  observations$genus_name <- genus_name
+  observations$species_name <- species_name
+  observations$category <- category
+  observations$binomial <- paste0(genus_name, " ", species_name)
+  
+  if (is.null(all_obs)){
+    all_obs <- observations
+  } else {
+    all_obs <- bind_rows(observations, 
+                         all_obs)
+  }
+  rm(observations)
+}
+```
+
+```{r status-check-data}
+# If there are problems at this point, don't bother evaluating the rest of the 
+# document
+if (!continue_knitting) {
+  knitr::knit_exit()
+}
+```
+
+Retrieval from iNaturalist and GBIF returned `r nrow(all_obs)` total observations.
+
+```{r data-cleaning, results = "asis"}
+# Restrict to the days and years of interest
+all_obs <- all_obs %>%
+  filter(!is.na(date),
+         yday(x = date) >= globals$min_julian,
+         yday(x = date) <= globals$max_julian,
+         year(x = date) >= globals$min_year,
+         year(x = date) <= globals$max_year)
+
+if (nrow(all_obs) == 0) {
+  cat("\n## Zero observations remain after date filtering.\n")
+  cat("Current filters only include ", globals$min_year, "-", globals$max_year)
+  cat(" and julian days ", globals$min_julian, "-", globals$max_julian, ".\n")
+  continue_knitting <- FALSE
+}
+```
+
+```{r status-check-cleaning}
+# If there are problems at this point, don't bother evaluating the rest of the 
+# document
+if (!continue_knitting) {
+  knitr::knit_exit()
+}
+```
+
+```{r meet-minimums, results = "asis"}
+# Calculate which years meet the minimum number of required samples
+year_counts <- all_obs %>%  
+  group_by(year = year(date)) %>%
+  summarize(obs_count = n()) %>%
+  filter(obs_count >= globals$minimum_required)
+
+# Filter obserations to only include those years with enough samples
+all_obs <- all_obs %>%
+  filter(year(date) %in% year_counts$year)
+
+if (nrow(all_obs) == 0) {
+  cat("\n## Zero observations remain after removing years with too few observations\n")
+  cat("Current filter requires at least ", globals$minimum_required, 
+      " observations per year", ".\n")
+  continue_knitting <- FALSE
+}
+```
+
+```{r status-check-minimums}
+# If there are problems at this point, don't bother evaluating the rest of the 
+# document
+if (!continue_knitting) {
+  knitr::knit_exit()
+}
+```
+
+Following date and sample size filtering, observation counts for species:
+
+```{r report-final-data, results = "asis"}
+for (i in 1:nrow(species)) {
+binomial <- paste0(species$genus[i], " ", species$species[i])
+  cat("+ _", binomial,
+      "_: ", nrow(all_obs[all_obs$binomial == binomial, ]),
+      " observations\n", sep = "")
+}
+```
+
+Observations for `r min(year(all_obs$date))` - `r max(year(all_obs$date))` (total of `r nrow(all_obs)` observations following date and sample size filtering):
+
+```{r plot-data, include = FALSE}
+# include = FALSE to prevent ggmap::get_map messages from showing up in output
+# Plot a map of observations post-filtering
+
+map_genus_name <- species$genus[species$category == "insect"][1]
+map_species_name <- species$species[species$category == "insect"][1]
+
+# Only download map files if we haven't already
+map_file <- data_file <- paste0("data/maps/", map_genus_name, 
+                                "-", map_species_name, "-and-hosts-map.RData")
+
+if (file.exists(map_file)) {
+  load(file = map_file)
+} else {
+  # Get a map image
+  # Have to provide min/max for lat and long, otherwise will assume Google map,
+  # regardless of value sent to source parameter
+  map_bounds <- c(floor(min(all_obs$longitude)),
+                floor(min(all_obs$latitude)),
+                ceiling(max(all_obs$longitude)),
+                ceiling(max(all_obs$latitude)))
+
+  obs_map <- get_map(location = map_bounds,
+                     source = "stamen",
+                     maptype = "terrain")
+  save(obs_map, file = map_file)
+}
+
+map_plot <- ggmap(ggmap = obs_map) +
+  geom_point(data = all_obs,
+             mapping = aes(x = longitude, y = latitude),
+             size = 0.7) +
+  theme_bw() +
+  ylab(label = "Latitude") +
+  xlab(label = "Longitude") +
+  facet_wrap(~binomial)
+
+# Plot observations by year
+obs_plot <- ggplot(data = all_obs,
+                   mapping = aes(x = year(date),
+                                 y = yday(date),
+                                 color = latitude)) +
+  geom_point() +
+  xlab(label = "Year") +
+  scale_color_gradient(name = "Latitude") +
+  ylab(label = "Day") +
+  theme_bw() +
+  theme(legend.position = "none", #c(0.12, 0.8),
+        legend.background = element_rect(size = 1.5),
+        legend.title = element_text(size = 6),
+        legend.text = element_text(size = 6),
+        legend.key.size = unit(x = 0.7, units = "line"),
+        axis.text.x = element_text(angle = 45, hjust = 1)) +
+  facet_wrap(~binomial)
+
+```
+
+```{r draw-observation-plots, fig.height = 5}
+# Two-panel plot of map and time
+suppressMessages(expr = grid.arrange(map_plot,
+                                     obs_plot,
+                                     nrow = 2))
+```
+
+Note in lower plot, **darker** points are from lower latitudes, while **lighter** points are from higher latitudes.
+
+## Test for change in peak over time
