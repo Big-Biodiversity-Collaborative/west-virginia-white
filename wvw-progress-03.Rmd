@@ -305,3 +305,11 @@ print(lat_plot)
 
 The next thing to addess is how to assess if the host plant(s) of species X are going to be available at the right latitude at the right time. Could create a vector of latitudes over which the plant and the bug occur. For those latitudes, use linear regression models to predict the yday of peak occurrance for each year. These become lines for each latitude that we can compare?
 
+Alternatively, could compare a simple linear regression model, based on observations of insect and host plant(s) combined, with a mixed-model on the same data, where species (insect vs. host) is a random effect (need to include year as random slope). See 
+
++ [https://stackoverflow.com/questions/24019807/how-to-compare-a-model-with-no-random-effects-to-a-model-with-a-random-effect-us](https://stackoverflow.com/questions/24019807/how-to-compare-a-model-with-no-random-effects-to-a-model-with-a-random-effect-us).
++ [https://stats.stackexchange.com/questions/141746/comparing-mixed-effects-and-fixed-effects-models-testing-significance-of-random](https://stats.stackexchange.com/questions/141746/comparing-mixed-effects-and-fixed-effects-models-testing-significance-of-random)
+
+This may not work for these data. From [Harrison et al. 2018](http://dx.doi.org/10.7717/peerj.4794):
+
+>_Random effect models have several desirable properties (see above), but their use comes with some caveats. First, they are quite 'data hungry'; requiring at least five 'levels' (groups) for a random intercept term to achieve robust estimates of variance (Gelman & Hill, 2007; Harrison, 2015). With <5 levels, the mixed model may not be able to estimate the among-population variance accurately. In this case, the variance estimate will either collapse to zero, making the model equivalent to an ordinary GLM (Gelman & Hill, 2007, p. 275) or be non-zero but incorrect if the small number of groups that were sampled are not representative of true distribution of means (Harrison, 2015). Second, models can be unstable if sample sizes across groups are highly unbalanced i.e. if some groups contain very few data. These issues are especially relevant to random slope models (Grueber et al., 2011)._
