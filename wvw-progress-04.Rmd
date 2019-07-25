@@ -293,3 +293,109 @@ suppressMessages(expr = grid.arrange(map_plot,
 Note in lower plot, **darker** points are from lower latitudes, while **lighter** points are from higher latitudes.
 
 ## Test for change in peak over time
+
+Ultimately, we want to know if the changes in insect phenology are matching the changes in host phenology. That is, is the effect of year on day of year for observations the same for insect and host(s). In this case, there are two host plants, and one question is: do we analyze them separately, or do we combine them? The latter is easier to do, and, in some ways, easier to interpret:
+
+$$
+Julian\ day = \beta_0 + \beta_1Year + \beta_2Latitude + \beta_3Category \\
++ \beta_4{Year \times Category}
+$$
+
+where there are two levels to $Category$: insect and host
+
+```{r two-species-model}
+# First create year and yday variables
+all_obs$yday <- yday(x = all_obs$date)
+all_obs$year <- year(x = all_obs$date)
+
+# Make the insect the reference category
+all_obs$category <- factor(x = all_obs$category,
+                           levels = c("insect", "host"))
+
+# Run the model, including category and a year by category interaction term
+two_sp_model <- lm(formula = yday ~ year + latitude + category + year * category,
+                   data = all_obs)
+two_sp_summary <- summary(two_sp_model)
+
+#TODO: report out results of the model
+```
+
+## Model visualization
+We can plot these in a couple of ways. First, we'll plot the predicted lines for several latitudes, with separate lines for insect and host. To calculate the slopes and intercepts, we need to look at the model formula and do some rearrangements. For the insect lines, the "insect" category is the reference, so we can drop all terms from the model that include $Category$ (because $Category = 0$ for all insect observations), and the model becomes:
+
+$$
+Julian\ day = \beta_0 + \beta_1Year + \beta_2Latitude
+$$
+
+And rearranging:
+$$
+Julian\ day = \beta_0 + \beta_2Latitude + \beta_1Year
+$$
+
+For a single value of $Latitude$, the first two terms constitute the intercept ($\beta_0 + \beta_2Latitude$) and the last coefficient is the slope ($\beta_1$).
+
+For the host lines, $Category = 1$, so the model becomes:
+$$
+Julian\ day = \beta_0 + \beta_1Year + \beta_2Latitude + \beta_3 + \beta_4Year
+$$
+
+Rearranging:
+$$
+Julian\ day = \beta_0 + \beta_3 + \beta_2Latitude + (\beta_1 + \beta_4)Year
+$$
+
+For a single value of $Latitude$, the intercept is defined by the sum of the first three terms ($\beta_0 + \beta_3 + \beta_2Latitude$) and the slope is the sum of the coefficients $\beta_1$ and $\beta_4$.
+
+Using those formulae, we can draw regression lines for a series of latitudes for insect and host responses through time.
+
+```{r model-visualization}
+# Extract model coefficients
+two_sp_coeff <- two_sp_summary$coefficients
+
+# Making variables to avoid confusion due to different indexing systems
+b0 <- two_sp_coeff[1]
+b1 <- two_sp_coeff[2]
+b2 <- two_sp_coeff[3]
+b3 <- two_sp_coeff[4]
+b4 <- two_sp_coeff[5]
+
+# Want separate lines for five latitudes (restricting to insect limit)
+pred_lats <- quantile(x = all_obs$latitude[all_obs$category == "insect"], 
+                      probs = seq(0, 1, 0.25))
+
+# Insect model:
+# Intercept = B0 + B2 * latitude
+# Slope = B1
+
+insect_intercepts <- b0 + (b2 * pred_lats)
+insect_slopes <- rep(x = b1, times = length(pred_lats))
+
+# Host model:
+# Intercept = B0 + B3 + B2 * latitude
+# Slope = B1 + B4
+
+host_intercepts <- b0 + b3 + (b2 * pred_lats)
+host_slopes <- rep(x = (b1 + b4), times = length(pred_lats))
+
+ablines <- data.frame(latitude = c(pred_lats, pred_lats),
+                      intercept = c(insect_intercepts, host_intercepts),
+                      slope = c(insect_slopes, host_slopes),
+                      category = c(rep(x = "insect", times = length(pred_lats)),
+                                   rep(x = "host", times = length(pred_lats))))
+
+
+lat_plot <- ggplot(data = all_obs, mapping = aes(x = year, 
+                                             y = yday)) +
+  geom_blank() + # Need to include or lines won't be plotted
+  ylab(label = "Julian Day") +
+  xlab(label = "Year") +
+  geom_abline(data = ablines, mapping = aes(slope = slope, 
+                                            intercept = intercept, 
+                                            color = latitude,
+                                            group = category,
+                                            lty = category)) +
+  scale_color_gradient() +
+  theme_bw()
+
+print(lat_plot)
+```
