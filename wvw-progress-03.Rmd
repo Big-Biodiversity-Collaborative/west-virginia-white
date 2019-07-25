@@ -270,24 +270,38 @@ obs <- observations %>%
 lat_model <- lm(yday ~ year + latitude + year*latitude, data = obs)
 lat_model_coeffs <- summary(lat_model)$coefficients
 
-lat_model_coeffs <- round(lat_model_coeffs, digits = 3)
+model_intercept <- lat_model_coeffs[1]
+model_year_slope <- lat_model_coeffs[2]
+model_latitude_slope <- lat_model_coeffs[3]
+model_interaction_slope <- lat_model_coeffs[4]
 
-model_intercept <- summary(lat_model)$coefficients[1, 1]
-model_year_slope <- summary(lat_model)$coefficients[2, 1]
-
-# TODO: look at ggPredict package for plotting this
-# OR, create a series of prediction lines for different latitudes...
 # To create regression lines for this plot, re-arrange the linear regression model
 # yday = B0 + B1 * year + B2 * latitude + B3 + year * latitude
 # yday = B0 + B2 * latitude + (B1 + B3 * latitude) * year
 # where the sum of the first two terms is the intercept and (B1 + B3 * latitude)
 # is the slope
-lat_plot <- ggplot(data = obs, mapping = aes(x = year, y = yday, color = latitude)) +
+pred_lats <- quantile(x = obs$latitude, probs = seq(0, 1, 0.25))
+pred_intercepts <- model_intercept + model_latitude_slope * pred_lats
+pred_slopes <- model_year_slope + (model_interaction_slope * pred_lats)
+ablines <- data.frame(latitude = pred_lats,
+                      intercept = pred_intercepts,
+                      slope = pred_slopes)
+
+lat_plot <- ggplot(data = obs, mapping = aes(x = year, 
+                                             y = yday, 
+                                             color = latitude)) +
   geom_point() +
   ylab(label = "Julian Day") +
   xlab(label = "Year") +
+  geom_abline(data = ablines, mapping = aes(slope = slope, 
+                                            intercept = intercept, 
+                                            color = latitude)) +
   scale_color_gradient() +
   theme_bw()
 
 print(lat_plot)
 ```
+
+
+The next thing to addess is how to assess if the host plant(s) of species X are going to be available at the right latitude at the right time. Could create a vector of latitudes over which the plant and the bug occur. For those latitudes, use linear regression models to predict the yday of peak occurrance for each year. These become lines for each latitude that we can compare?
+
