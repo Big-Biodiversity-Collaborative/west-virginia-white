@@ -188,6 +188,7 @@ if (!continue_knitting) {
 
 ```{r meet-minimums, results = "asis"}
 # Calculate which years meet the minimum number of required samples
+# TODO: Need to do filtration for each species separately.
 year_counts <- all_obs %>%  
   group_by(year = year(date)) %>%
   summarize(obs_count = n()) %>%
@@ -360,10 +361,12 @@ b3 <- two_sp_coeff[4]
 b4 <- two_sp_coeff[5]
 
 # Want separate lines for five latitudes (restricting to insect limit)
-# TODO: Don't actually want quantiles, but rather, evenly distributed bins
-# min, (min + mean)/2, mean, (max + mean)/2, max
-pred_lats <- quantile(x = all_obs$latitude[all_obs$category == "insect"], 
-                      probs = seq(0, 1, 0.25))
+min_lat_insect <- min(all_obs$latitude[all_obs$category == "insect"])
+med_lat_insect <- median(all_obs$latitude[all_obs$category == "insect"])
+max_lat_insect <- max(all_obs$latitude[all_obs$category == "insect"])
+pred_lats <- c(min_lat_insect, (min_lat_insect + med_lat_insect)/2,
+               med_lat_insect,
+               (max_lat_insect + med_lat_insect)/2, max_lat_insect)
 
 # Insect model:
 # Intercept = B0 + B2 * latitude
@@ -470,10 +473,6 @@ b4 <- three_sp_coeff[5] # diphylla
 b5 <- three_sp_coeff[6] # concatenata X year
 b6 <- three_sp_coeff[7] # diphylla X year
 
-# Want separate lines for five latitudes (restricting to insect limit)
-pred_lats <- quantile(x = all_obs$latitude[all_obs$category == "insect"], 
-                      probs = seq(0, 1, 0.25))
-
 # Insect model:
 # Intercept = B0 + B2 * latitude
 # Slope = B1
@@ -527,3 +526,43 @@ Considering the slopes, we see that controlling for latitude, observations are g
 | _C. concatenata_  | `r round(abs(b1 + b5), digits = 3)` days/year |
 | _C. diphylla_     | `r round(abs(b1 + b6), digits = 3)` days/year |
 
+# Separate analyses
+
+There is some question about the sample size issues among the three taxa. Is the relationship between year and yday for _P. virginiensis_ being heavily influenced by the considerably larger sample sizes of the host plants?
+
+## _P. virginiensis_ data alone.
+
+Consider the model 
+
+$$
+Julian\ day = \beta_0 + \beta_1Year + \beta_2Latitude
+$$
+
+```{r insect-linear-model}
+insect_model <- lm(yday ~ year + latitude,
+                   data = all_obs[all_obs$genus_name == "Pieris", ])
+insect_model_coeff <- summary(insect_model)$coefficients
+
+ablines <- data.frame(latitude = pred_lats,
+                      intercept = insect_model_coeff[1] + insect_model_coeff[3] * pred_lats,
+                      slope = insect_model_coeff[2])
+
+lat_plot <- ggplot(data = all_obs[all_obs$genus_name == "Pieris", ], 
+                   mapping = aes(x = year, y = yday)) +
+  # geom_point()
+  geom_blank() + # Need to include or lines won't be plotted
+  ylab(label = "Julian Day") +
+  xlab(label = "Year") +
+  geom_abline(data = ablines, mapping = aes(slope = slope, 
+                                            intercept = intercept, 
+                                            color = latitude)) +
+  scale_color_gradient() +
+  theme_bw()
+
+print(lat_plot)
+```
+
+Controlling for latitude, the change in _P. virginiensis_ is `r abs(round(insect_model_coeff[2], digits = 3))` days earlier per year. This is a larger change than estimated in the model that includes the host plants (`r round(abs(b1), digits = 3)` days/year).
+
+# Interpolation
+One approach used in other phenological studies uses interpolation to estimate the day on which 10% of the observations for that year occurred (and 50% and 90%). This approach should be less influenced by sample size. For example, we can look at 
