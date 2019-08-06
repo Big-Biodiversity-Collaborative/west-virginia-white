@@ -135,12 +135,50 @@ for (i in 1:nrow(species)) {
     }
   }
   
+  # Restrict to the days and years of interest
+  observations <- observations %>%
+    filter(!is.na(date),
+           yday(x = date) >= globals$min_julian,
+           yday(x = date) <= globals$max_julian,
+           year(x = date) >= globals$min_year,
+           year(x = date) <= globals$max_year)
+  
+  # Check for at least some observations
+  if (nrow(observations) == 0) {
+    cat("\n## Zero observations remain after date filtering for _", genus_name, 
+        " ", species_name, "_.\n")
+    cat("Current filters only include ", globals$min_year, "-", globals$max_year)
+    cat(" and julian days ", globals$min_julian, "-", globals$max_julian, ".\n")
+    continue_knitting <- FALSE
+  }
+  
+  # Filter observations to only keep those from years with at least a minimum 
+  # number of observations
+  year_counts <- observations %>%  
+    group_by(year = year(date)) %>%
+    summarize(obs_count = n()) %>%
+    filter(obs_count >= globals$minimum_required)
+  
+  # Filter obserations to only include those years with enough samples
+  observations <- observations %>%
+    filter(year(date) %in% year_counts$year)
+  
+  # Check for at least some observations after removing years with too few 
+  # observations
+  if (nrow(observations) == 0) {
+    cat("\n## Zero observations remain after removing years with too few 
+        observations for _", genus_name, " ", species_name, "_.\n")
+    cat("Current filter requires at least ", globals$minimum_required, 
+        " observations per year", ".\n")
+    continue_knitting <- FALSE
+  }
+  
   # Add genus and species columns to the data
   observations$genus_name <- genus_name
   observations$species_name <- species_name
   observations$category <- category
   observations$binomial <- paste0(genus_name, " ", species_name)
-  
+    
   if (is.null(all_obs)){
     all_obs <- observations
   } else {
@@ -161,52 +199,7 @@ if (!continue_knitting) {
 
 Retrieval from iNaturalist and GBIF returned `r nrow(all_obs)` total observations.
 
-```{r data-cleaning, results = "asis"}
-# Restrict to the days and years of interest
-all_obs <- all_obs %>%
-  filter(!is.na(date),
-         yday(x = date) >= globals$min_julian,
-         yday(x = date) <= globals$max_julian,
-         year(x = date) >= globals$min_year,
-         year(x = date) <= globals$max_year)
-
-if (nrow(all_obs) == 0) {
-  cat("\n## Zero observations remain after date filtering.\n")
-  cat("Current filters only include ", globals$min_year, "-", globals$max_year)
-  cat(" and julian days ", globals$min_julian, "-", globals$max_julian, ".\n")
-  continue_knitting <- FALSE
-}
-```
-
 ```{r status-check-cleaning}
-# If there are problems at this point, don't bother evaluating the rest of the 
-# document
-if (!continue_knitting) {
-  knitr::knit_exit()
-}
-```
-
-```{r meet-minimums, results = "asis"}
-# Calculate which years meet the minimum number of required samples
-# TODO: Need to do filtration for each species separately.
-year_counts <- all_obs %>%  
-  group_by(year = year(date)) %>%
-  summarize(obs_count = n()) %>%
-  filter(obs_count >= globals$minimum_required)
-
-# Filter obserations to only include those years with enough samples
-all_obs <- all_obs %>%
-  filter(year(date) %in% year_counts$year)
-
-if (nrow(all_obs) == 0) {
-  cat("\n## Zero observations remain after removing years with too few observations\n")
-  cat("Current filter requires at least ", globals$minimum_required, 
-      " observations per year", ".\n")
-  continue_knitting <- FALSE
-}
-```
-
-```{r status-check-minimums}
 # If there are problems at this point, don't bother evaluating the rest of the 
 # document
 if (!continue_knitting) {
@@ -549,7 +542,6 @@ ablines <- data.frame(latitude = pred_lats,
 
 lat_plot <- ggplot(data = all_obs[all_obs$genus_name == "Pieris", ], 
                    mapping = aes(x = year, y = yday)) +
-  # geom_point()
   geom_blank() + # Need to include or lines won't be plotted
   ylab(label = "Julian Day") +
   xlab(label = "Year") +
@@ -565,4 +557,135 @@ print(lat_plot)
 Controlling for latitude, the change in _P. virginiensis_ is `r abs(round(insect_model_coeff[2], digits = 3))` days earlier per year. This is a larger change than estimated in the model that includes the host plants (`r round(abs(b1), digits = 3)` days/year).
 
 # Interpolation
-One approach used in other phenological studies uses interpolation to estimate the day on which 10% of the observations for that year occurred (and 50% and 90%). This approach should be less influenced by sample size. For example, we can look at 
+One approach used in other phenological studies uses interpolation to estimate the day on which 10% of the observations for that year occurred (and 50% and 90%). This approach should be less influenced by sample size. For example, we can look at the bottom 10% estimate for each year for _Pieris virginiensis_:
+
+```{r lower-10-insect}
+# When computing the quantile, will lose latitude information
+insect_10 <- all_obs[all_obs$genus_name == "Pieris", ] %>%
+  group_by(year) %>%
+  summarise(yday = quantile(x = yday, probs = 0.1, names = FALSE),
+            early = TRUE)
+
+insect_10_model <- lm(yday ~ year, data = insect_10)
+insect_10_summary <- summary(insect_10_model)
+insect_10_coeff <- insect_10_summary$coefficients[, 1]
+
+insect_10_plot <- ggplot(data = insect_10, mapping = aes(x = year, y = yday)) + 
+  geom_point() +
+  geom_abline(intercept = insect_10_coeff[1], slope = insect_10_coeff[2]) +
+  ylab(label = "Julian Day") +
+  xlab(label = "Year") +
+  ggtitle(label = "Pieris virginiensis, 10%") +
+  theme_bw()
+
+print(insect_10_plot)
+```
+
+We can also investigate the same statistic (the day of they year on which 10% of the observations for that year were observed) for the two host plants.
+
+```{r lower-10-all}
+# Look at all species simultaneously
+all_10 <- all_obs %>%
+  group_by(binomial, year) %>%
+  summarise(yday = quantile(x = yday, probs = 0.1, names = FALSE),
+            early = TRUE)
+
+all_10_model <- lm(yday ~ year + binomial + year * binomial,
+                   data = all_10)
+all_10_summary <- summary(all_10_model)
+all_10_coeff <- all_10_summary$coefficients
+
+# Extract coefficients for plot lines
+insect_intercept <- all_10_coeff[1]
+concatenata_intercept <- all_10_coeff[1] + all_10_coeff[3]
+diphylla_intercept <- all_10_coeff[1] + all_10_coeff[4]
+insect_slope <- all_10_coeff[2]
+concatenata_slope <- all_10_coeff[2] + all_10_coeff[5]
+diphylla_slope <- all_10_coeff[2] + all_10_coeff[6]
+
+# Lines for plot
+all_10_ablines <- data.frame(intercept = c(insect_intercept, concatenata_intercept, diphylla_intercept),
+                      slope = c(insect_slope, concatenata_slope, diphylla_slope),
+                      species = c("Pieris virginiensis", "Cardamine concatenata", "Cardamine diphylla"))
+
+all_10_plot <- ggplot(data = all_10, mapping = aes(x = year, y = yday)) +
+  geom_blank() +
+  geom_abline(data = all_10_ablines, mapping = aes(slope = slope,
+                                                   intercept = intercept,
+                                                   color = species,
+                                                   group = species,
+                                                   lty = species)) +
+  ylab(label = "Julian Day") +
+  xlab(label = "Year") +
+  ggtitle(label = "All species, 10%") +
+  theme_bw()
+
+print(all_10_plot)
+```
+
+Now consider the _end_ of the season, with the 90% quantile.
+
+```{r all-90}
+# Look at all species simultaneously
+all_90 <- all_obs %>%
+  group_by(binomial, year) %>%
+  summarise(yday = quantile(x = yday, probs = 0.9, names = FALSE),
+            early = TRUE)
+
+all_90_model <- lm(yday ~ year + binomial + year * binomial,
+                   data = all_90)
+all_90_summary <- summary(all_90_model)
+all_90_coeff <- all_90_summary$coefficients
+
+# Extract coefficients for plot lines
+insect_intercept <- all_90_coeff[1]
+concatenata_intercept <- all_90_coeff[1] + all_90_coeff[3]
+diphylla_intercept <- all_90_coeff[1] + all_90_coeff[4]
+insect_slope <- all_90_coeff[2]
+concatenata_slope <- all_90_coeff[2] + all_90_coeff[5]
+diphylla_slope <- all_90_coeff[2] + all_90_coeff[6]
+
+# Lines for plot
+all_90_ablines <- data.frame(intercept = c(insect_intercept, concatenata_intercept, diphylla_intercept),
+                             slope = c(insect_slope, concatenata_slope, diphylla_slope),
+                             species = c("Pieris virginiensis", "Cardamine concatenata", "Cardamine diphylla"))
+
+all_90_plot <- ggplot(data = all_90, mapping = aes(x = year, y = yday)) +
+  geom_blank() +
+  geom_abline(data = all_90_ablines, mapping = aes(slope = slope,
+                                                   intercept = intercept,
+                                                   color = species,
+                                                   group = species,
+                                                   lty = species)) +
+  ylab(label = "Julian Day") +
+  xlab(label = "Year") +
+  ggtitle(label = "All species, 90%") +
+  theme_bw()
+
+print(all_90_plot)
+```
+
+Considering both 10% and 90% on the same plot:
+
+```{r plot-10-and-10}
+all_10_ablines$q <- 10
+all_90_ablines$q <- 90
+both_ablines <- rbind(all_10_ablines, all_90_ablines)
+all_both <- rbind(all_10, all_90)
+
+all_both_plot <- ggplot(data = all_both, mapping = aes(x = year, y = yday)) +
+  geom_blank() +
+  geom_abline(data = both_ablines, mapping = aes(slope = slope,
+                                                   intercept = intercept,
+                                                   color = species,
+                                                   group = species,
+                                                   lty = species)) +
+  ylab(label = "Julian Day") +
+  xlab(label = "Year") +
+  ggtitle(label = "All species, 10% and 90%") +
+  theme_bw()
+
+print(all_both_plot)
+```
+
+**But**, we really need to account for latitude. It's not clear this approach will account for this.
