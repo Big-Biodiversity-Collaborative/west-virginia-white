@@ -12,6 +12,7 @@ globals <- global_values()
 library(tidyverse)
 library(lubridate)
 library(gganimate) # via devtools
+library(transformr) # required for animating density plots
 # install.packages("gifski") # Required for animation
 
 species <- data.frame(genus = c("Pieris", "Cardamine", "Cardamine"),
@@ -41,7 +42,7 @@ for (i in 1:nrow(species)) {
   year_counts <- observations %>%  
     group_by(year = year(date)) %>%
     summarize(obs_count = n()) %>%
-    filter(obs_count >= globals$minimum_required)
+    filter(obs_count >= 10) # globals$minimum_required
   
   # Filter obserations to only include those years with enough samples
   observations <- observations %>%
@@ -77,3 +78,20 @@ obs_plot <- ggplot(data = all_obs,
   transition_time(year) +
   ease_aes("linear")
 print(obs_plot)
+
+# Add density plots
+# Probably should avoid these, as the animation creates artifacts when switching
+# from one year to the next (especially when there are years with missing data)
+# Troublesome years
+remove_years <- c(1968, 1972, 1983, 2003)
+good_year_obs <- all_obs[!(all_obs$year %in% remove_years), ]
+
+density_plot <- ggplot(data = good_year_obs[good_year_obs$category == "insect", ], 
+                   mapping = aes(x = latitude, y = yday)) +
+  geom_point(alpha = 0.5) +
+  geom_density2d() +
+  # gganimate
+  labs(title = "Year: {frame_time}", x = "Latitude", y = "Julian Day") +
+  transition_time(year) +
+  ease_aes("linear")
+print(density_plot)
