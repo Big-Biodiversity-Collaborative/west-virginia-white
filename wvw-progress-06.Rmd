@@ -1,5 +1,5 @@
 ---
-title: "Pieris virginiensis progress report 04"
+title: "Pieris virginiensis progress report 06"
 author: "Jeff Oliver"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: pdf_document
@@ -286,140 +286,37 @@ suppressMessages(expr = grid.arrange(map_plot,
 
 Note in lower plot, **darker** points are from lower latitudes, while **lighter** points are from higher latitudes.
 
-## Test for change in peak over time
+## Models allowing species x latitude interactions
 
-Ultimately, we want to know if the changes in insect phenology are matching the changes in host phenology. That is, is the effect of year on day of year for observations the same for insect and host(s). In this case, there are two host plants, and one question is: do we analyze them separately, or do we combine them? The latter is easier to do, and, in some ways, easier to interpret:
-
-$$
-Julian\ day = \beta_0 + \beta_1Year + \beta_2Latitude + \beta_3Category \\
-+ \beta_4{Year \times Category}
-$$
-
-where there are two levels to $Category$: insect and host
-
-```{r two-species-model}
-# First create year and yday variables
-all_obs$yday <- yday(x = all_obs$date)
-all_obs$year <- year(x = all_obs$date)
-
-# Make the insect the reference category
-all_obs$category <- factor(x = all_obs$category,
-                           levels = c("insect", "host"))
-
-# Run the model, including category and a year by category interaction term
-two_sp_model <- lm(formula = yday ~ year + latitude + category + year * category,
-                   data = all_obs)
-two_sp_summary <- summary(two_sp_model)
-
-#TODO: report out results of the model
-```
-
-## Model visualization
-We can plot these in a couple of ways. First, we'll plot the predicted lines for several latitudes, with separate lines for insect and host. To calculate the slopes and intercepts, we need to look at the model formula and do some rearrangements. For the insect lines, the "insect" category is the reference, so we can drop all terms from the model that include $Category$ (because $Category = 0$ for all insect observations), and the model becomes:
-
-$$
-Julian\ day = \beta_0 + \beta_1Year + \beta_2Latitude
-$$
-
-And rearranging:
-$$
-Julian\ day = \beta_0 + \beta_2Latitude + \beta_1Year
-$$
-
-For a single value of $Latitude$, the first two terms constitute the intercept ($\beta_0 + \beta_2Latitude$) and the last coefficient is the slope ($\beta_1$).
-
-For the host lines, $Category = 1$, so the model becomes:
-$$
-Julian\ day = \beta_0 + \beta_1Year + \beta_2Latitude + \beta_3 + \beta_4Year
-$$
-
-Rearranging:
-$$
-Julian\ day = \beta_0 + \beta_3 + \beta_2Latitude + (\beta_1 + \beta_4)Year
-$$
-
-For a single value of $Latitude$, the intercept is defined by the sum of the first three terms ($\beta_0 + \beta_3 + \beta_2Latitude$) and the slope is the sum of the coefficients $\beta_1$ and $\beta_4$.
-
-Using those formulae, we can draw regression lines for a series of latitudes for insect and host responses through time.
-
-```{r two-sp-model-visualization}
-# Extract model coefficients
-two_sp_coeff <- two_sp_summary$coefficients
-
-# Making variables to avoid confusion due to different indexing systems
-b0 <- two_sp_coeff[1]
-b1 <- two_sp_coeff[2]
-b2 <- two_sp_coeff[3]
-b3 <- two_sp_coeff[4]
-b4 <- two_sp_coeff[5]
-
-# Want separate lines for five latitudes (restricting to insect limit)
-min_lat_insect <- min(all_obs$latitude[all_obs$category == "insect"])
-med_lat_insect <- median(all_obs$latitude[all_obs$category == "insect"])
-max_lat_insect <- max(all_obs$latitude[all_obs$category == "insect"])
-pred_lats <- c(min_lat_insect,
-               med_lat_insect,
-               max_lat_insect)
-
-# Insect model:
-# Intercept = B0 + B2 * latitude
-# Slope = B1
-
-insect_intercepts <- b0 + (b2 * pred_lats)
-insect_slopes <- rep(x = b1, times = length(pred_lats))
-
-# Host model:
-# Intercept = B0 + B3 + B2 * latitude
-# Slope = B1 + B4
-
-host_intercepts <- b0 + b3 + (b2 * pred_lats)
-host_slopes <- rep(x = (b1 + b4), times = length(pred_lats))
-
-ablines <- data.frame(latitude = c(pred_lats, pred_lats),
-                      intercept = c(insect_intercepts, host_intercepts),
-                      slope = c(insect_slopes, host_slopes),
-                      category = c(rep(x = "insect", times = length(pred_lats)),
-                                   rep(x = "host", times = length(pred_lats))))
-
-
-lat_plot <- ggplot(data = all_obs, mapping = aes(x = year, 
-                                             y = yday)) +
-  geom_blank() + # Need to include or lines won't be plotted
-  ylab(label = "Julian Day") +
-  xlab(label = "Year") +
-  geom_abline(data = ablines, mapping = aes(slope = slope, 
-                                            intercept = intercept, 
-                                            color = latitude,
-                                            group = category,
-                                            lty = category)) +
-  scale_color_gradient() +
-  theme_bw()
-
-print(lat_plot)
-```
-
-## Separating hosts
-There is question (in my mind at least) about the lumping together of both hosts. It may be more appropriate to replace the $Category$ predictor with $Species$, keeping _P. virginensis_ as the reference for ease of interpretation.
+Previous models only included species x year interactions, but since these things all have different altitudinal ranges, would be useful to include that interaction as well. 
 
 $$
 Julian\ day = \beta_0 + \beta_1Year + \beta_2Latitude + \beta_3Species \\
-+ \beta_4{Year \times Species}
++ \beta_4{Year \times Species} + \beta_5{Latitude \times Species}
 $$
+
+Expanding $Species$ because there are _three_ levels, this becomes:
 
 However, because there are **three** levels to $Species$, a more accurate representation of this model would be 
 
 $$
 Julian\ day = \beta_0 + \beta_1Year + \beta_2Latitude + \beta_3concatenata + \beta_4diphylla \\
-+ \beta_5{Year \times concatenata} + \beta_6{Year \times diphylla}
++ \beta_5{Year \times concatenata} + \beta_6{Year \times diphylla} \\
++ \beta_7{Latitude \times concatenata} + \beta_8{Latitude \times diphylla}
 $$
 
 (so long as _P. virginensis_ is reference).
 
 ```{r species-model}
+# First create year and yday variables
+all_obs$yday <- yday(x = all_obs$date)
+all_obs$year <- year(x = all_obs$date)
+
+# Ensure leveling has P. virginiensis as reference
 all_obs$binomial <- factor(x = all_obs$binomial,
                            levels = c("Pieris virginiensis", "Cardamine concatenata", "Cardamine diphylla"))
 
-three_sp_model <- lm(yday ~ year + latitude + binomial + year * binomial,
+three_sp_model <- lm(yday ~ year + latitude + binomial + year * binomial + latitude * binomial,
                     data = all_obs)
 three_sp_summary <- summary(three_sp_model)
 ```
@@ -436,22 +333,20 @@ $$
 
 For a single value of $Latitude$, the first two terms constitute the intercept ($\beta_0 + \beta_2Latitude$) and the last coefficient is the slope ($\beta_1$).
 
-
 For the host lines, there are two models, one for each species of host. For _C. concatenata_:
 $$
-Julian\ day = \beta_0 + \beta_1Year + \beta_2Latitude + \beta_3 + \beta_5Year
+Julian\ day = \beta_0 + \beta_1Year + \beta_2Latitude + \beta_3 + \beta_5Year + \beta_7Latitude
 $$
 
 Rearranging:
 $$
-Julian\ day = \beta_0 + \beta_3 + \beta_2Latitude + (\beta_1 + \beta_5)Year
+Julian\ day = \beta_0 + \beta_3 + (\beta_1 + \beta_5)Year + (\beta_2 + \beta_7)Latitude
 $$
 
-So for a single value of $Latitude$, the model for _C. concatenata_ has an intercept of $\beta_0 + \beta_3 + \beta_2Latitude$ and a slope of $\beta_1$ and $\beta_5$
+So for a single value of $Latitude$, the model for _C. concatenata_ has an intercept of $\beta_0 + \beta_3 + (\beta_2 + \beta_7)Latitude$ and a slope of $\beta_1$ and $\beta_5$.
 
-Similarly, the model for _C. diphylla_ can be simplified to an intercept of $\beta_0 + \beta_4 + \beta_2Latitude$ and a slope of $\beta_1 + \beta_6$
+Similarly, the model for _C. diphylla_ can be simplified to an intercept of $\beta_0 + \beta_4 + (\beta_2 + \beta_8)Latitude$ and a slope of $\beta_1 + \beta_6$.
 
-Visualizing the model:
 
 ```{r three-sp-model-visualization}
 # Extract model coefficients
@@ -465,6 +360,16 @@ b3 <- three_sp_coeff[4] # concatenata
 b4 <- three_sp_coeff[5] # diphylla
 b5 <- three_sp_coeff[6] # concatenata X year
 b6 <- three_sp_coeff[7] # diphylla X year
+b7 <- three_sp_coeff[8] # concatenata X latitude
+b8 <- three_sp_coeff[9] # diphylla X latitude
+
+# Want separate lines for five latitudes (restricting to insect limit)
+min_lat_insect <- min(all_obs$latitude[all_obs$category == "insect"])
+med_lat_insect <- median(all_obs$latitude[all_obs$category == "insect"])
+max_lat_insect <- max(all_obs$latitude[all_obs$category == "insect"])
+pred_lats <- c(min_lat_insect,
+               med_lat_insect,
+               max_lat_insect)
 
 # Insect model:
 # Intercept = B0 + B2 * latitude
@@ -474,15 +379,15 @@ insect_intercepts <- b0 + (b2 * pred_lats)
 insect_slopes <- rep(x = b1, times = length(pred_lats))
 
 # concatenata model:
-# Intercept = B0 + B3 + B2 * latitude
+# Intercept = B0 + B3 + (B2 + B7) * latitude
 # Slope = B1 + B5
-concatenata_intercepts <- b0 + b3 + (b2 * pred_lats)
+concatenata_intercepts <- b0 + b3 + ((b2 + b7) * pred_lats)
 concatenata_slopes <- rep(x = (b1 + b5), times = length(pred_lats))
 
 # diphylla model:
-# Intercept = B0 + B4 + B2 * latitude
+# Intercept = B0 + B4 + (B2 + B8) * latitude
 # Slope = B1 + B6
-diphylla_intercepts <- b0 + b4 + (b2 * pred_lats)
+diphylla_intercepts <- b0 + b4 + ((b2 + b8) * pred_lats)
 diphylla_slopes <- rep(x = (b1 + b6), times = length(pred_lats))
 
 ablines <- data.frame(latitude = c(pred_lats, pred_lats, pred_lats),
@@ -519,173 +424,3 @@ Considering the slopes, we see that controlling for latitude, observations are g
 | _C. concatenata_  | `r round(abs(b1 + b5), digits = 3)` days/year |
 | _C. diphylla_     | `r round(abs(b1 + b6), digits = 3)` days/year |
 
-# Separate analyses
-
-There is some question about the sample size issues among the three taxa. Is the relationship between year and yday for _P. virginiensis_ being heavily influenced by the considerably larger sample sizes of the host plants?
-
-## _P. virginiensis_ data alone.
-
-Consider the model 
-
-$$
-Julian\ day = \beta_0 + \beta_1Year + \beta_2Latitude
-$$
-
-```{r insect-linear-model}
-insect_model <- lm(yday ~ year + latitude,
-                   data = all_obs[all_obs$genus_name == "Pieris", ])
-insect_model_coeff <- summary(insect_model)$coefficients
-
-ablines <- data.frame(latitude = pred_lats,
-                      intercept = insect_model_coeff[1] + insect_model_coeff[3] * pred_lats,
-                      slope = insect_model_coeff[2])
-
-lat_plot <- ggplot(data = all_obs[all_obs$genus_name == "Pieris", ], 
-                   mapping = aes(x = year, y = yday)) +
-  geom_blank() + # Need to include or lines won't be plotted
-  ylab(label = "Julian Day") +
-  xlab(label = "Year") +
-  geom_abline(data = ablines, mapping = aes(slope = slope, 
-                                            intercept = intercept, 
-                                            color = latitude)) +
-  scale_color_gradient() +
-  theme_bw()
-
-print(lat_plot)
-```
-
-Controlling for latitude, the change in _P. virginiensis_ is `r abs(round(insect_model_coeff[2], digits = 3))` days earlier per year. This is a larger change than estimated in the model that includes the host plants (`r round(abs(b1), digits = 3)` days/year).
-
-# Interpolation
-One approach used in other phenological studies uses interpolation to estimate the day on which 10% of the observations for that year occurred (and 50% and 90%). This approach should be less influenced by sample size. For example, we can look at the bottom 10% estimate for each year for _Pieris virginiensis_:
-
-```{r lower-10-insect}
-# When computing the quantile, will lose latitude information
-insect_10 <- all_obs[all_obs$genus_name == "Pieris", ] %>%
-  group_by(year) %>%
-  summarise(yday = quantile(x = yday, probs = 0.1, names = FALSE),
-            early = TRUE)
-
-insect_10_model <- lm(yday ~ year, data = insect_10)
-insect_10_summary <- summary(insect_10_model)
-insect_10_coeff <- insect_10_summary$coefficients[, 1]
-
-insect_10_plot <- ggplot(data = insect_10, mapping = aes(x = year, y = yday)) + 
-  geom_point() +
-  geom_abline(intercept = insect_10_coeff[1], slope = insect_10_coeff[2]) +
-  ylab(label = "Julian Day") +
-  xlab(label = "Year") +
-  ggtitle(label = "Pieris virginiensis, 10%") +
-  theme_bw()
-
-print(insect_10_plot)
-```
-
-We can also investigate the same statistic (the day of they year on which 10% of the observations for that year were observed) for the two host plants.
-
-```{r lower-10-all}
-# Look at all species simultaneously
-all_10 <- all_obs %>%
-  group_by(binomial, year) %>%
-  summarise(yday = quantile(x = yday, probs = 0.1, names = FALSE),
-            early = TRUE)
-
-all_10_model <- lm(yday ~ year + binomial + year * binomial,
-                   data = all_10)
-all_10_summary <- summary(all_10_model)
-all_10_coeff <- all_10_summary$coefficients
-
-# Extract coefficients for plot lines
-insect_intercept <- all_10_coeff[1]
-concatenata_intercept <- all_10_coeff[1] + all_10_coeff[3]
-diphylla_intercept <- all_10_coeff[1] + all_10_coeff[4]
-insect_slope <- all_10_coeff[2]
-concatenata_slope <- all_10_coeff[2] + all_10_coeff[5]
-diphylla_slope <- all_10_coeff[2] + all_10_coeff[6]
-
-# Lines for plot
-all_10_ablines <- data.frame(intercept = c(insect_intercept, concatenata_intercept, diphylla_intercept),
-                      slope = c(insect_slope, concatenata_slope, diphylla_slope),
-                      species = c("Pieris virginiensis", "Cardamine concatenata", "Cardamine diphylla"))
-
-all_10_plot <- ggplot(data = all_10, mapping = aes(x = year, y = yday)) +
-  geom_blank() +
-  geom_abline(data = all_10_ablines, mapping = aes(slope = slope,
-                                                   intercept = intercept,
-                                                   color = species,
-                                                   group = species,
-                                                   lty = species)) +
-  ylab(label = "Julian Day") +
-  xlab(label = "Year") +
-  ggtitle(label = "All species, 10%") +
-  theme_bw()
-
-print(all_10_plot)
-```
-
-Now consider the _end_ of the season, with the 90% quantile.
-
-```{r all-90}
-# Look at all species simultaneously
-all_90 <- all_obs %>%
-  group_by(binomial, year) %>%
-  summarise(yday = quantile(x = yday, probs = 0.9, names = FALSE),
-            early = TRUE)
-
-all_90_model <- lm(yday ~ year + binomial + year * binomial,
-                   data = all_90)
-all_90_summary <- summary(all_90_model)
-all_90_coeff <- all_90_summary$coefficients
-
-# Extract coefficients for plot lines
-insect_intercept <- all_90_coeff[1]
-concatenata_intercept <- all_90_coeff[1] + all_90_coeff[3]
-diphylla_intercept <- all_90_coeff[1] + all_90_coeff[4]
-insect_slope <- all_90_coeff[2]
-concatenata_slope <- all_90_coeff[2] + all_90_coeff[5]
-diphylla_slope <- all_90_coeff[2] + all_90_coeff[6]
-
-# Lines for plot
-all_90_ablines <- data.frame(intercept = c(insect_intercept, concatenata_intercept, diphylla_intercept),
-                             slope = c(insect_slope, concatenata_slope, diphylla_slope),
-                             species = c("Pieris virginiensis", "Cardamine concatenata", "Cardamine diphylla"))
-
-all_90_plot <- ggplot(data = all_90, mapping = aes(x = year, y = yday)) +
-  geom_blank() +
-  geom_abline(data = all_90_ablines, mapping = aes(slope = slope,
-                                                   intercept = intercept,
-                                                   color = species,
-                                                   group = species,
-                                                   lty = species)) +
-  ylab(label = "Julian Day") +
-  xlab(label = "Year") +
-  ggtitle(label = "All species, 90%") +
-  theme_bw()
-
-print(all_90_plot)
-```
-
-Considering both 10% and 90% on the same plot:
-
-```{r plot-10-and-10}
-all_10_ablines$q <- 10
-all_90_ablines$q <- 90
-both_ablines <- rbind(all_10_ablines, all_90_ablines)
-all_both <- rbind(all_10, all_90)
-
-all_both_plot <- ggplot(data = all_both, mapping = aes(x = year, y = yday)) +
-  geom_blank() +
-  geom_abline(data = both_ablines, mapping = aes(slope = slope,
-                                                   intercept = intercept,
-                                                   color = species,
-                                                   group = species,
-                                                   lty = species)) +
-  ylab(label = "Julian Day") +
-  xlab(label = "Year") +
-  ggtitle(label = "All species, 10% and 90%") +
-  theme_bw()
-
-print(all_both_plot)
-```
-
-**But**, we really need to account for latitude. It's not clear this approach will account for this.
