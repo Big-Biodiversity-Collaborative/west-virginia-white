@@ -2,3 +2,6 @@
 wvw-repo.Rproj
 *.Rproj
 *-emergence.pdf
+
+data/*-gbif-raw.csv
+data/*-gbif-clean.csv
