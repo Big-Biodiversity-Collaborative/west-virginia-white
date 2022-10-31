@@ -4,6 +4,7 @@
 # 2022-10-28
 
 library(dplyr)
+library(lubridate)
 source(file = "functions/query_gbif.R")
 
 # Replace raw data if already on disk?
@@ -11,6 +12,9 @@ replace <- FALSE
 
 # The earliest year of observations to include
 min_year <- 1960
+
+# restrict insect observations to adults
+adults_only <- TRUE
 
 # Geographic limits
 # TODO: Need to justify these limits - might need to adopt an envelope approach
@@ -67,6 +71,12 @@ for (i in 1:length(taxon_keys)) {
     rename(longitude = decimalLongitude,
            latitude = decimalLatitude)
 
+  # Remove egg and larva records for insect
+  if (names(taxon_keys)[i] == "Pieris virginiensis" & adults_only) {
+    gbif_obs <- gbif_obs %>%
+      filter(!(lifeStage %in% c("Egg", "Larva")))
+  }
+  
   # Write these cleaned data to file
   write.csv(x = gbif_obs,
             file = paste0("data/", nice_name, "-gbif-clean.csv"))

@@ -9,10 +9,11 @@
 #' https://github.com/Big-Biodiversity-Collaborative/BotanicGardenHotspot
 #' 
 #' @return data frame of observations returned from GBIF
-query_gbif <- function(taxon_keys, lon_limits, lat_limits, verbose = FALSE,
+query_gbif <- function(taxon_keys, verbose = FALSE,
                        cols = c("decimalLatitude", "decimalLongitude",
                                 "individualCount", "family", "species", "year", 
-                                "month", "day", "datasetName", "gbifID")) {
+                                "month", "day", "datasetName", "gbifID", 
+                                "lifeStage")) {
   if (!require(rgbif)) {
     stop("GBIF queries require the rgbif library")
   }
