@@ -16,6 +16,12 @@ min_year <- 1960
 # restrict insect observations to adults
 adults_only <- TRUE
 
+# Remove observations seen on same day and same lat/lon
+deduplicate <- TRUE
+
+# Problematic GBIF ids; some are know to be misidentifcations, list here
+gbif_id_remove <- c(3427558396, 3397466009, 3397667698)
+
 # Geographic limits
 # TODO: Need to justify these limits - might need to adopt an envelope approach
 limit_lon <- c(-99, -45)
@@ -51,7 +57,10 @@ for (i in 1:length(taxon_keys)) {
   
   # See how many we start with to see how many are filtered out
   num_raw <- nrow(gbif_obs)
-  
+
+  # Drop any that do not have year information
+  gbif_obs <- gbif_obs[!is.na(gbif_obs$year), ]
+
   # Apply time restrictions (year, January 1 observations)
   gbif_obs <- gbif_obs %>%
     filter(year >= min_year) %>%
@@ -76,7 +85,17 @@ for (i in 1:length(taxon_keys)) {
     gbif_obs <- gbif_obs %>%
       filter(!(lifeStage %in% c("Egg", "Larva")))
   }
+
+  # Remove duplicates if appropriate
+  if (deduplicate) {
+    gbif_obs <- gbif_obs %>%
+      distinct(latitude, longitude, year, month, day, .keep_all = TRUE)
+  }
   
+  # Remove records known to be problematic (mis-ID'd)
+  gbif_obs <- gbif_obs %>%
+    filter(!(gbifID %in% gbif_id_remove))
+    
   # Write these cleaned data to file
   write.csv(x = gbif_obs,
             file = paste0("data/", nice_name, "-gbif-clean.csv"))

@@ -3,7 +3,47 @@
 # jcoliver@email.arizona.edu
 # 2019-05-17
 
-rm(list = ls())
+library(dplyr)
+library(lubridate)
+
+# Some records of WVW are super late, want to flag for further investigation, 
+# at least one we know is wrong https://www.gbif.org/occurrence/3427558396 
+# (it is a moth, from Texas).
+
+# Want to see all observations before week 10 and on or after week 30
+# Translates to before yday 70 and after yday 203
+early_day <- 70
+late_day <- 203
+
+wvw_obs <- read.csv(file = "data/pieris_virginiensis-gbif-clean.csv")
+
+# Get the year and julian day
+wvw_obs$yday <- lubridate::yday(as.Date(paste0(wvw_obs$year, 
+                                               "-", wvw_obs$month, 
+                                               "-", wvw_obs$day)))
+
+early <- wvw_obs %>%
+  filter(yday <= 70)
+# nrow(early)
+# [1] 0
+
+late <- wvw_obs %>%
+  filter(yday >= 203)
+# nrow(late)
+# [7]
+# Quick formatting of GBIF url to check on those observations
+gbif_base <- "https://www.gbif.org/occurrence/"
+gbif_urls <- paste0(gbif_base, late$gbifID)
+# [1] "https://www.gbif.org/occurrence/3427558396"  # REMOVE
+# [2] "https://www.gbif.org/occurrence/3397667698"  # Questionable; parking lot, no image
+# [3] "https://www.gbif.org/occurrence/3397436165"  # No image
+# [4] "https://www.gbif.org/occurrence/2804300425"  
+# [5] "https://www.gbif.org/occurrence/43858728"  
+# [6] "https://www.gbif.org/occurrence/2804280427"
+# [7] "https://www.gbif.org/occurrence/3397466009"  # REMOVE, V. virginiensis
+
+################################################################################
+# Old below here
 
 ################################################################################
 # Want to avoid Papilio rumiko / rumina disaster

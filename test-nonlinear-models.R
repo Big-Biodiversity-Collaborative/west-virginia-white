@@ -13,6 +13,8 @@ library(lubridate)
 library(splines)
 library(dplyr)
 
+set.seed(20221107)
+
 # obs <- read.csv(file = "data/Pieris-virginiensis-spocc.csv")
 obs <- read.csv(file = "data/pieris_virginiensis-gbif-clean.csv")
 # Some are missing dates. Drop those.
@@ -21,7 +23,11 @@ obs <- obs[!is.na(obs$year), ]
 
 # Get the year and julian day
 # obs$year <- lubridate::year(obs$date)
-obs$yday <- lubridate::yday(as.Date(paste0(obs$year, "-", obs$month, "-", obs$day)))
+obs$yday <- lubridate::yday(as.Date(paste0(obs$year, 
+                                           "-", 
+                                           obs$month, 
+                                           "-", 
+                                           obs$day)))
 
 # Some observations are *really* old; drop those, too
 obs <- obs[obs$year >= 1960, ]
@@ -50,9 +56,10 @@ model_2_2_poly3 <- lm(yday ~ poly(year, degree = 3) + latitude, data = obs)
 # Model checks
 summary(model_1_lm)
 summary(model_2_1_poly2)
-anova(model_1_lm, model_2_1_poly2)
+anova(model_1_lm, model_2_1_poly2) # 0.044
 summary(model_2_2_poly3)
 anova(model_2_1_poly2, model_2_2_poly3) # n.s.
+anova(model_1_lm, model_2_2_poly3) # n.s.
 
 # Do a quick bit of plotting to see the linear & polynomial results
 # Need to create data frame with mean values of latitude
@@ -75,28 +82,12 @@ ggplot(data = pred_data, mapping = aes(x = year, y = yday)) +
   geom_smooth(method = lm, formula = y ~ poly(x, degree = 3), color = "#CC3377") +
   theme_bw()
 
-# TODO: Really need to try better knot locations
-# 3. Natural spline
-model_3_spline1 <- lm(yday ~ splines::ns(year, df = 2) + latitude, data = obs)
-model_3_spline2 <- lm(yday ~ splines::ns(year, df = 3) + latitude, data = obs)
-anova(model_1_lm, model_3_spline1)
-anova(model_3_spline1, model_3_spline2)
-anova(model_2_2_poly3, model_3_spline2)
-ggplot(data = pred_data, mapping = aes(x = year, y = yday)) +
-  geom_point() +
-  geom_smooth(method = lm, formula = y ~ splines::ns(x, df = 2)) +
-  geom_smooth(method = lm, formula = y ~ splines::ns(x, df = 3), color = "#88EE55") +
-  geom_smooth(method = lm, formula = y ~ poly(x, degree = 3), color = "#CC3377") +
-  theme_bw()
 
 ################################################################################
+# 3. Natural spline
 # Quadratic polynomial, where we determine knot location with cross-validation
-# on 10% of observations that are left out.
-
-# Assign each observation to a fold, randomizing just in case
-obs$fold <- sample(rep(x = 1:10, 
-                       length.out = nrow(obs)),
-                   replace = FALSE)
+# on 10% of observations that are left out. Our data end up making pretty noisy
+# MSE, so we will repeat the entire cross-validation approach 10 times.
 
 # Need to try different knot locations on each 90% partition of the data, then 
 # calculate the MSE for the remaining 10% of the data. For the knot locations 
@@ -104,77 +95,65 @@ obs$fold <- sample(rep(x = 1:10,
 # let's say they need to be at least three years from beginning or end
 knot_range <- c((min(obs$year) + 2):(max(obs$year) - 2))
 
-# Matrix to hold MSE values for each knot/fold for regression spine
-rs_mse_mat <- matrix(data = NA, 
-                  nrow = length(knot_range),
-                  ncol = length(unique(obs$fold)))
-# Iterate over all possible knot locations
-for (knot_i in 1:length(knot_range)) {
-  knot_location <- knot_range[knot_i]
-  message("Testing knot location ", knot_location)
-  # Estimate model on training and calculate MSE on testing data, using each 
-  # fold once as testing data
-  for (test_fold_i in 1:length(unique(obs$fold))) {
-    test_fold <- sort(unique(obs$fold))[test_fold_i]
-    message("...with fold ", test_fold, " as testing fold")
-    train_data <- obs[obs$fold != test_fold, ]
-    test_data <- obs[obs$fold == test_fold, ]
-    # Estimate model with training data
-    quad_model <- lm(yday ~ bs(year, df = 5, 
-                               knots = knot_location, 
-                               degree = 2) + latitude,
-                     data = train_data)
-    # To calculate the MSE on testing data, need to make predictions and 
-    # compare with actual; pred will be a vector of predicted yday values
-    pred <- predict(quad_model, newdata = test_data)
-    mse <- mean((test_data$yday - pred)^2)
-    rs_mse_mat[knot_i, test_fold_i] <- mse
+num_reps <- 20
+ns_mse_list <- list(num_reps)
+for (rep_i in 1:num_reps) {
+  message("Cross-validation replicate ", rep_i)
+  
+  # Assign each observation to a fold, randomizing just in case
+  obs$fold <- sample(rep(x = 1:10, 
+                         length.out = nrow(obs)),
+                     replace = FALSE)
+  
+  # Matrix to hold MSE values for each knot/fold for natural spine
+  ns_mse_mat <- matrix(data = NA, 
+                       nrow = length(knot_range),
+                       ncol = length(unique(obs$fold)))
+  # Iterate over all possible knot locations
+  for (knot_i in 1:length(knot_range)) {
+    knot_location <- knot_range[knot_i]
+    # message("Testing knot location ", knot_location)
+    # Estimate model on training and calculate MSE on testing data, using each 
+    # fold once as testing data
+    for (test_fold_i in 1:length(unique(obs$fold))) {
+      test_fold <- sort(unique(obs$fold))[test_fold_i]
+      # message("...with fold ", test_fold, " as testing fold")
+      train_data <- obs[obs$fold != test_fold, ]
+      test_data <- obs[obs$fold == test_fold, ]
+      # Estimate model with training data
+      quad_model <- lm(yday ~ ns(year, df = 2, 
+                                 knots = knot_location) + latitude,
+                       data = train_data)
+      # To calculate the MSE on testing data, need to make predictions and 
+      # compare with actual; pred will be a vector of predicted yday values
+      # Occasionally throws:
+      # Warning message:
+      #   In predict.lm(quad_model, newdata = test_data) :
+      #   prediction from a rank-deficient fit may be misleading
+      pred <- predict(quad_model, newdata = test_data)
+      mse <- mean((test_data$yday - pred)^2)
+      ns_mse_mat[knot_i, test_fold_i] <- mse
+    }
   }
+  # Summarize the MSE
+  ns_mse_mean <- rowMeans(x = ns_mse_mat)
+  ns_mse_list[[rep_i]] <- data.frame(year = knot_range,
+                               mse = ns_mse_mean)
 }
 
-# Summarize the MSE
-rs_mse_mean <- rowMeans(x = rs_mse_mat)
-rs_mse_summary <- data.frame(year = knot_range,
-                          mse = rs_mse_mean)
-plot(x = rs_mse_summary$year, y = rs_mse_summary$mse)
-
-# Matrix to hold MSE values for each knot/fold for natural spine
-ns_mse_mat <- matrix(data = NA, 
-                     nrow = length(knot_range),
-                     ncol = length(unique(obs$fold)))
-# Iterate over all possible knot locations
-for (knot_i in 1:length(knot_range)) {
-  knot_location <- knot_range[knot_i]
-  message("Testing knot location ", knot_location)
-  # Estimate model on training and calculate MSE on testing data, using each 
-  # fold once as testing data
-  for (test_fold_i in 1:length(unique(obs$fold))) {
-    test_fold <- sort(unique(obs$fold))[test_fold_i]
-    message("...with fold ", test_fold, " as testing fold")
-    train_data <- obs[obs$fold != test_fold, ]
-    test_data <- obs[obs$fold == test_fold, ]
-    # Estimate model with training data
-    quad_model <- lm(yday ~ ns(year, df = 2, 
-                               knots = knot_location) + latitude,
-                     data = train_data)
-    # To calculate the MSE on testing data, need to make predictions and 
-    # compare with actual; pred will be a vector of predicted yday values
-    pred <- predict(quad_model, newdata = test_data)
-    mse <- mean((test_data$yday - pred)^2)
-    ns_mse_mat[knot_i, test_fold_i] <- mse
-  }
-}
-
-# Summarize the MSE
-ns_mse_mean <- rowMeans(x = ns_mse_mat)
-ns_mse_summary <- data.frame(year = knot_range,
-                             mse = ns_mse_mean)
+# Bind results from each replicate together
+ns_mse_summary <- dplyr::bind_rows(ns_mse_list, .id = "replicate")
 plot(x = ns_mse_summary$year, y = ns_mse_summary$mse)
-# Print information for the knot location with minimum MSE
-ns_mse_summary[ns_mse_summary$mse == min(ns_mse_summary$mse), ]
-# Set the year of best knot for use in models
-knot <- ns_mse_summary$year[ns_mse_summary$mse == min(ns_mse_summary$mse)]
 
+# For each replicate, find the year with the minimum MSE
+ns_mse_mins <- ns_mse_summary %>%
+  group_by(replicate) %>%
+  slice_min(order_by = mse)
+  
+# Take average year from the minimum MSEs
+knot <- mean(ns_mse_mins$year)
+
+# Run spline model with that year as knot
 model_4_spline1 <- lm(yday ~ splines::ns(year, df = 2, 
                                          knots = knot) + latitude, 
                       data = obs)
@@ -183,6 +162,13 @@ ggplot(data = pred_data, mapping = aes(x = year, y = yday)) +
   geom_point() +
   geom_smooth(method = lm, formula = y ~ splines::ns(x, df = 2, knots = knot)) +
   theme_bw()
+
+# Compare this spline model to linear & polynomial regression
+anova(model_1_lm, model_4_spline1) # p = 0.028
+anova(model_2_1_poly2, model_4_spline1) # Same number of parameters...
+
+################################################################################
+# Examples below here
 
 # Example of regression spline on mtcars with quadratic & cubic polynomial
 # with one knot
