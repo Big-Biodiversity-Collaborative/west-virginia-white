@@ -7,6 +7,7 @@ library(dplyr)     # data wrangling
 library(lubridate) # Julian day calculations
 library(ggplot2)   # plotting
 library(tidyr)     # pivoting
+library(lmtest)    # test for heteroskedasticity
 
 # Test for differential responses to time between insect and host
 # Latitude is included as co-variate
@@ -19,6 +20,11 @@ library(tidyr)     # pivoting
 # GBIF ID 3070528423, https://www.inaturalist.org/observations/8854921
 # But would be good to know if local botany experts are seeing these plants 
 # emerge this "early"
+
+# Earliest year of data to include; 
+#     + change to run on different set of dates
+#     + set to NULL to run on all dates
+min_year <- 2000 # NULL
 
 # Load data for insect
 insect <- read.csv(file = "data/pieris_virginiensis-gbif-clean.csv")
@@ -36,6 +42,11 @@ hosts <- host_concatenata %>%
 # Combine data into single data frame
 all_obs <- insect %>%
   bind_rows(hosts)
+
+if (!is.null(min_year)) {
+  all_obs <- all_obs %>%
+    filter(year >= min_year)
+}
 
 # Calculate Julian day
 all_obs <- all_obs %>%
@@ -90,14 +101,14 @@ anova(interaction_poly, species_poly)
 # 1  20240 8254606                                 
 # 2  20237 7646149  3    608457 536.8 < 2.2e-16 ***
 
-################################################################################
-# Plotting models where two host species are treated as the same thing
-################################################################################
-
 # Create data set of varying latitudes to show relationships, using minimum, 
 # maximum, and 25-, 50-, 75-percentiles of insect latitudes; quantile defaults
 # to these percentiles
 lat_percentiles <- quantile(x = all_obs$latitude[all_obs$organism == "insect"])
+
+################################################################################
+# Plotting models where two host species are treated as the same thing
+################################################################################
 
 # Make a plot of the models, start with wide version
 plot_data_wide <- all_obs %>%
@@ -153,7 +164,7 @@ year_plot <- ggplot(data = plot_data, mapping = aes(x = year)) +
   theme_bw()
 year_plot
 
-# Let's plot just the mean (or median?) latitude lines
+# Let's plot just the median latitude lines
 median_lat_plot <- ggplot(mapping = aes(x = year)) +
   geom_point(data = all_obs,
              mapping = aes(y = julian_day,
@@ -181,7 +192,7 @@ plot_data_wide_s <- all_obs %>%
          lat_050 = lat_percentiles[3],
          lat_075 = lat_percentiles[4],
          lat_100 = lat_percentiles[5])
-head(plot_data_wide_s)
+# head(plot_data_wide_s)
 
 # Transform to long for easier use with ggplot
 plot_data_long_s <- plot_data_wide_s %>%
@@ -191,7 +202,7 @@ plot_data_long_s <- plot_data_wide_s %>%
   mutate(percentile = as.numeric(gsub(pattern = "lat_", 
                                       replacement = "",
                                       x = percentile))/100)
-head(plot_data_long_s)
+# head(plot_data_long_s)
 
 # Finally, create a prediction data set to use with geom_line (geom_smooth does 
 # not appear amenable to polynomial with interactions)
@@ -200,9 +211,9 @@ plot_data_s <- plot_data_long_s %>%
                                     newdata = plot_data_long_s)) %>%
   distinct(year, species, percentile, .keep_all = TRUE) %>%
   arrange(year)
-head(plot_data_s)
+# head(plot_data_s)
 
-# Plotting just the means for mean latitudes lines
+# Plotting just the median latitude lines
 median_lat_plot_s <- ggplot(mapping = aes(x = year)) +
   geom_point(data = all_obs,
              mapping = aes(y = julian_day,
@@ -246,6 +257,7 @@ interaction_poly_spring <- lm(julian_day ~ latitude + poly(year, degree = 2)*org
 
 # Compare the two regression models
 anova(simple_poly_spring, interaction_poly_spring)
+anova(simple_linear_spring, interaction_poly_spring)
 # Model 1: julian_day ~ latitude + poly(year, degree = 2) + organism
 # Model 2: julian_day ~ latitude + poly(year, degree = 2) * organism
 #   Res.Df     RSS Df Sum of Sq      F    Pr(>F)    
@@ -273,7 +285,7 @@ spring_data_wide <- spring_obs %>%
          lat_050 = lat_percentiles[3],
          lat_075 = lat_percentiles[4],
          lat_100 = lat_percentiles[5])
-head(spring_data_wide)
+# head(spring_data_wide)
 
 # Transform to long for easier use with ggplot
 spring_data_long <- spring_data_wide %>%
@@ -283,7 +295,7 @@ spring_data_long <- spring_data_wide %>%
   mutate(percentile = as.numeric(gsub(pattern = "lat_", 
                                       replacement = "",
                                       x = percentile))/100)
-head(spring_data_long)
+# head(spring_data_long)
 
 # Finally, create a prediction data set to use with geom_line (geom_smooth does 
 # not appear amenable to polynomial with interactions)
@@ -292,15 +304,20 @@ spring_plot_data <- spring_data_long %>%
                                     newdata = spring_data_long)) %>%
   distinct(year, species, percentile, .keep_all = TRUE) %>%
   arrange(year)
-head(spring_plot_data)
+# head(spring_plot_data)
 
 # Plotting just the means for mean latitudes lines
 spring_median_plot <- ggplot(mapping = aes(x = year)) +
-  geom_point(data = spring_obs,
-             mapping = aes(y = julian_day,
-                           color = species),
-             alpha = 0.1,
-             size = 1) +
+  # geom_point(data = spring_obs,
+  #            mapping = aes(y = julian_day,
+  #                          color = species),
+  #            alpha = 0.1,
+  #            size = 1) +
+  geom_jitter(data = spring_obs,
+              mapping = aes(y = julian_day,
+                            color = species),
+              alpha = 0.1,
+              size = 1) +
   geom_line(data = spring_plot_data %>% filter(percentile == 0.5),
             mapping = aes(y = julian_predicted,
                           color = species),
@@ -315,8 +332,87 @@ spring_median_plot <- ggplot(mapping = aes(x = year)) +
 spring_median_plot
 ggsave(spring_median_plot, filename = "output/polynomial-plot.pdf")
 
+# Suggestion of heteroskedasticity?
+# plot(x = fitted(species_poly_spring), 
+#      y = resid(species_poly_spring), 
+#      xlab = "Fitted Values", 
+#      ylab = "Residuals")
+# Test:
+# lmtest::bptest(species_poly_spring)
+# studentized Breusch-Pagan test
+# 
+# data:  species_poly_spring
+# BP = 660.84, df = 9, p-value < 2.2e-16
+# *** YES, definitely heteroskedastic
+
+# For weighted least-squares, weight inverse to variance
+wts <- 1 / lm(abs(species_poly_spring$residuals) ~ species_poly_spring$fitted.values)$fitted.values^2
+
+# Re-run the model, this time using weights
+species_poly_spring_wls <- lm(julian_day ~ latitude + poly(year, degree = 2)*species, 
+                              data = spring_obs,
+                              weights = wts)
+summary(species_poly_spring_wls)
+
+# Now do predictions & plot
+spring_wls_data <- spring_data_long %>%
+  mutate(julian_predicted = predict(species_poly_spring_wls, 
+                                    newdata = spring_data_long)) %>%
+  distinct(year, species, percentile, .keep_all = TRUE) %>%
+  arrange(year)
+# head(spring_wls_data)
+
+# Plotting just the median latitudes lines
+spring_wls_plot <- ggplot(mapping = aes(x = year)) +
+  # geom_point(data = spring_obs,
+  #            mapping = aes(y = julian_day,
+  #                          color = species),
+  #            alpha = 0.1,
+  #            size = 1) +
+  geom_jitter(data = spring_obs,
+              mapping = aes(y = julian_day,
+                            color = species),
+              alpha = 0.1,
+              size = 1) +
+  geom_line(data = spring_wls_data %>% filter(percentile == 0.5),
+            mapping = aes(y = julian_predicted,
+                          color = species),
+            size = 1) +
+  scale_y_continuous(limits = c(min(spring_obs$julian_day), 
+                                max(spring_obs$julian_day))) +
+  scale_color_discrete(name = "Species") +
+  ylab(label = "Julian Day") +
+  xlab(label = "Year") +
+  theme_bw() +
+  theme(legend.position = c(0.2, 0.18))
+spring_wls_plot
+
+# Plot 25, 50, 75 percentiles
+year_plot_wls <- ggplot(data = spring_wls_data %>% filter(percentile %in% c(0.25, 0.5, 0.75)), 
+                    mapping = aes(x = year)) +
+  # geom_point(data = all_obs, # observations
+  #            mapping = aes(y = julian_day,
+  #                          shape = species), size = 2) +
+  # scale_shape_discrete(solid = FALSE) +
+  geom_line(mapping = aes(y = julian_predicted, # models
+                          color = as.factor(percentile),
+                          linetype = species)) +
+  theme_bw()
+year_plot_wls
+
+# Try faceting by latitude...
+year_plot_wls <- ggplot(data = spring_wls_data %>% filter(percentile %in% c(0.25, 0.5, 0.75)), 
+                        mapping = aes(x = year)) +
+  geom_line(mapping = aes(y = julian_predicted, # models
+                          color = species)) +
+  facet_wrap(~ percentile, ncol = 3) +
+  theme_bw()
+year_plot_wls
+
+################################################################################
 # A model I do not want to try to interpret includes a year X latitude 
 # interaction, too
+################################################################################
 complex_poly_spring <- lm(julian_day ~ latitude*year + poly(year, degree = 2)*species, 
                           data = spring_obs)
 summary(complex_poly_spring)
@@ -353,3 +449,61 @@ spring_complex_plot <- ggplot(mapping = aes(x = year)) +
   theme_bw() +
   theme(legend.position = c(0.2, 0.18))
 spring_complex_plot
+
+################################################################################
+# Instead of polynomial for latitude interaction, just do linear response to 
+# time
+################################################################################
+complex_lm_spring <- lm(julian_day ~ latitude*year*species,
+                        data = spring_obs)
+summary(complex_lm_spring)
+
+# Het test
+lmtest::bptest(complex_lm_spring)
+# lmtest::bptest(species_poly_spring)
+# studentized Breusch-Pagan test
+# 
+# data:  complex_lm_spring
+# BP = 886.68, df = 11, p-value < 2.2e-16
+# *** heteroskedastic
+
+complex_lm_wts <- 1 / lm(abs(complex_lm_spring$residuals) ~ complex_lm_spring$fitted.values)$fitted.values^2
+complex_lm_spring <- lm(julian_day ~ latitude*year*species,
+                        data = spring_obs,
+                        weights = complex_lm_wts)
+summary(complex_lm_spring)
+
+# Make predictions for plotting
+# Do the predictions then and plot a few latitude lines
+complex_lm_plot_data <- spring_data_long %>%
+  mutate(julian_predicted = predict(complex_lm_spring, 
+                                    newdata = spring_data_long)) %>%
+  distinct(year, species, percentile, .keep_all = TRUE) %>%
+  arrange(year) %>%
+  filter(percentile %in% c(0.25, 0.5, 0.75)) %>%
+  mutate(latitude = round(latitude, digits = 0)) %>%
+  mutate(facet_lat = paste0("Latitude: ", latitude)) %>%
+  # To get levels right for plotting higher latitudes at top
+  mutate(facet_lat = factor(facet_lat, 
+                            levels = rev(sort(unique(facet_lat)))))
+
+# Faceting by latitude
+complex_lm_plot <- ggplot(data = complex_lm_plot_data, 
+                        mapping = aes(x = year)) +
+  geom_line(mapping = aes(y = julian_predicted, # models
+                          color = species, 
+                          linetype = organism),
+            size = 1) +
+  guides(linetype = "none") +
+  scale_color_manual(values = c("#df65b0","#78c679","#006837"), 
+                       name = "Species") +
+  facet_wrap(~ facet_lat, 
+             # labeller = labeller(percentile = perc_labels),
+             scales = "free_y",
+             ncol = 1) +
+  ylab(label = "Julian day") +
+  xlab(label = "Year") +
+  theme_bw() +
+  theme(strip.background = element_blank())
+complex_lm_plot
+ggsave(complex_lm_plot, filename = "output/complex-linear.pdf")
