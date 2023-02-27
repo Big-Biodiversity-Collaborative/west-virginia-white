@@ -31,6 +31,7 @@ limit_lat <- c(15, 70)
 taxon_keys <- c("Pieris virginiensis" = 5137890,
                 "Cardamine concatenata" = 3046217,
                 "Cardamine diphylla" = 3045717)
+                # "Alliaria petiolata" = 5376075)
 
 # Downloads data from GBIF (unless already present or force re-download)
 for (i in 1:length(taxon_keys)) {
@@ -44,7 +45,9 @@ for (i in 1:length(taxon_keys)) {
   if (!file.exists(raw_data_file) | replace) {
     # Do the download from GBIF
     gbif_obs <- query_gbif(taxon_keys = taxon_keys[i],
-                           verbose = TRUE)
+                           verbose = TRUE,
+                           lon_limits = limit_lon,
+                           lat_limits = limit_lat)
     # Write the raw data to file
     write.csv(file = raw_data_file,
               x = gbif_obs,

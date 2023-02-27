@@ -2,6 +2,10 @@
 #' 
 #' @param taxon_keys numeric vector of taxon keys to search for
 #' @param verbose logical indicating whether or not to print status messages
+#' @param lon_limits numeric vector of length two giving minimum and maximum
+#' decimal longitude of search query
+#' @param lat_limits numeric vector of length two giving minimum and maximum 
+#' decimal latitude of search query
 #' @param cols columns to retain; if \code{NULL}, returns all columns that are 
 #' returned from a call to \code{rgbif::occ_search}
 #' 
@@ -10,6 +14,7 @@
 #' 
 #' @return data frame of observations returned from GBIF
 query_gbif <- function(taxon_keys, verbose = FALSE,
+                       lon_limits, lat_limits, 
                        cols = c("decimalLatitude", "decimalLongitude",
                                 "individualCount", "family", "species", "year", 
                                 "month", "day", "datasetName", "gbifID", 
@@ -48,6 +53,11 @@ query_gbif <- function(taxon_keys, verbose = FALSE,
                          taxon_count, " for taxon key ", taxon_key))
         }
         gbif_obs <- rgbif::occ_search(taxonKey = taxon_key,
+                                      decimalLongitude = paste(lon_limits[1:2],
+                                                               collapse = ","),
+                                      decimalLatitude = paste(lat_limits[1:2],
+                                                              collapse = ","),
+                                      hasGeospatialIssue = FALSE,
                                       start = start,
                                       limit = 300)
         if (page == 1) {
