@@ -10,6 +10,7 @@ require(dplyr)
 require(tidyr)
 require(lubridate)
 require(ggplot2)
+require(terra)
 
 # Number of latitudinal "bands"
 # TODO: still some hard-coding below based on this value; currently only 
@@ -23,6 +24,25 @@ num_bands <- 3
 # exclusion works at the year/band level, so in some years, one band may be 
 # excluded, while other bands are retained
 min_per_band <- 5
+
+# Instead of latitude, use temperature bins as proxy of isoclines. Mean annual 
+# temperature for North America from https://climatena.ca/spatialData
+# Note these data are 10 x C
+temps <- terra::rast(x = "data/MAT.tif")
+temps <- temps * 0.1
+
+# Convert to Fahrenheit?
+# temps <- (temps * 9/5) + 32
+
+# Now do another multiplication to get 10 degree "bins"
+# First convert to 0.1 x C
+temps_binned <- temps * 0.1
+# Use floor to round down to nearest integer
+temps_binned <- terra::app(temps_binned, floor)
+# Multiply by 10 to get back to actual degrees C
+temps_binned <- temps_binned  * 10
+# plot(temps_binned, xlim = c(-100, -70), ylim = c(30, 50))
+# plot(temps, xlim = c(-100, -70), ylim = c(30, 50))
 
 # Earliest year of data to include; 
 #     + change to run on different set of dates
@@ -49,6 +69,11 @@ if (pre_summer) {
     filter(month <= 6) %>% # Drop any after June
     filter(month > 6 | day < 22) # Drop any after June 21
 }
+
+# Add mean annual temperature information to insect data frame
+extracted_temps <- terra::extract(x = temps_binned, 
+                                  y = insect[, c("longitude", "latitude")])
+insect$mat <- extracted_temps[, 2]
 
 # Determine latitude bands (1/4, 1/2, 3/4, 4/4) or (1/3, 2/3, 3/3)
 lat_quantiles <- (1:(num_bands - 1))/num_bands
