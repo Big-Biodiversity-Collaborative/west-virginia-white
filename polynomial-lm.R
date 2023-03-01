@@ -20,6 +20,8 @@ library(tidyr)     # pivoting
 # But would be good to know if local botany experts are seeing these plants 
 # emerge this "early"
 
+unzip(zipfile = "data/gbif-clean.zip")
+
 # Load data for insect
 insect <- read.csv(file = "data/pieris_virginiensis-gbif-clean.csv")
 # Add label for organism (insect vs host)
@@ -347,9 +349,9 @@ spring_complex_plot <- ggplot(mapping = aes(x = year)) +
             size = 1) +
   # scale_y_continuous(limits = c(min(spring_obs$julian_day), 
   #                               max(spring_obs$julian_day))) +
-  scale_color_discrete(name = "Species") +
+  scale_color_brewer(name = "Species", palette = "Dark2") +
   ylab(label = "Julian Day") +
   xlab(label = "Year") +
   theme_bw() +
-  theme(legend.position = c(0.2, 0.18))
+  theme(legend.position = "none")
 spring_complex_plot
