@@ -216,3 +216,17 @@ quasi <- glm(prop ~ year*temp_band,
              data = insect_c,
              family = quasibinomial)
 summary(quasi)
+
+# Do a boxplot
+all_obs <- insect %>%
+  bind_rows(hosts)
+ggplot(data = all_obs, mapping = aes(x = year, 
+                                   y = julian_day, 
+                                   group = interaction(year, organism),
+                                   fill = organism,
+                                   color = organism)) + 
+  geom_boxplot(outlier.shape = NA, coef = 0) + 
+  facet_wrap(~ temp_band, ncol = 1, scales = "free_y") +
+  scale_fill_manual(values = c("#a6dba0", "#c2a5cf")) +
+  scale_color_manual(values = c("#008837", "#7b3294")) +
+  theme_bw()
