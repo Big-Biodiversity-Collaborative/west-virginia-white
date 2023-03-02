@@ -8,7 +8,7 @@ library(lubridate)
 source(file = "functions/query_gbif.R")
 
 # Replace raw data if already on disk?
-replace <- FALSE
+replace <- TRUE
 
 # The earliest year of observations to include
 min_year <- 1960
