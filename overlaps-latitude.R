@@ -48,7 +48,7 @@ if (!is.null(min_year)) {
 if (pre_summer) {
   insect <- insect %>%
     filter(month <= 6) %>% # Drop any after June
-    filter(month > 6 | day < 22) # Drop any after June 21
+    filter(month < 6 | day < 22) # Drop any after June 21
 }
 
 # Determine latitude bands (1/4, 1/2, 3/4, 4/4) or (1/3, 2/3, 3/3)

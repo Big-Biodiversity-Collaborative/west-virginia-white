@@ -46,7 +46,7 @@ all_obs <- insect %>%
 if (pre_summer) {
   all_obs <- all_obs %>%
     filter(month <= 6) %>% # Drop any after June
-    filter(month > 6 | day < 22) # Drop any after June 21
+    filter(month < 6 | day < 22) # Drop any after June 21
 }
 
 # May need to use a MCP approach to select only those plant records relevant 
@@ -79,8 +79,6 @@ points(latitude ~ longitude, data = insect[insect$envelope == 1, ],
 #                                       geom = c("x", "y"),
 #                                       crs = "EPSG:4326"))
 
-# Perhaps then use st functions to only extract plant samples that are in the 
-# polygon of interest
 
 # Start by a very crude subset of four areas:
 #   Tennessee

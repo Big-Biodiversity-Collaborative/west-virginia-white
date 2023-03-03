@@ -63,7 +63,7 @@ if (!is.null(min_year)) {
 if (pre_summer) {
   insect <- insect %>%
     filter(month <= 6) %>% # Drop any after June
-    filter(month > 6 | day < 22) # Drop any after June 21
+    filter(month < 6 | day < 22) # Drop any after June 21
 }
 
 # Add mean annual temperature information to insect data frame
