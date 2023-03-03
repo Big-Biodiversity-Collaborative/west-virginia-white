@@ -9,6 +9,7 @@ require(sf)        # Filtering points in polygon
 require(lubridate) # Julian days
 require(ks)        # Estimating density envelope
 require(terra)     # Extracting growing degree days data
+require(ggridges)  # Ridge plots
 
 # Set up filter values
 min_year <- 2000
@@ -156,6 +157,9 @@ model_6 <- lm(julian_day ~ year * gdd * species,
               data = envelope_obs)
 summary(model_6)
 
+################################################################################
+# Model visualization
+
 # Look at some predictions, for gdd at 25, 50, and 75
 gdd_quantiles <- stats::quantile(x = envelope_obs$gdd[envelope_obs$organism == "insect"],
                                  probs = c(0.25, 0.5, 0.75))
@@ -181,3 +185,57 @@ ggplot(data = newdata, mapping = aes(x = year, y = julian_day,
   facet_wrap(~ gdd) +
   theme_bw() +
   labs(x = "Year", y = "Julian day")
+
+################################################################################
+# Ridge plots
+# Three bins for three different ridge plots
+gdd_bins <- stats::quantile(x = envelope_obs$gdd[envelope_obs$organism == "insect"],
+                                 probs = c(1/3, 2/3))
+
+# TODO: Need to do some filtering for those years where we have enough data to 
+# plot densities for both hosts and insect
+
+# Create three data subsets
+low_gdd <- envelope_obs %>%
+  filter(gdd < gdd_bins[1])
+
+med_gdd <- envelope_obs %>%
+  filter(gdd >= gdd_bins[1]) %>%
+  filter(gdd < gdd_bins[2])
+
+high_gdd <- envelope_obs %>%
+  filter(gdd >= gdd_bins[2])
+
+# Make three different ridgeline plots
+low_gdd %>% 
+  mutate(year = factor(year, levels = rev(sort(unique(year))))) %>%
+  ggplot(mapping = aes(x = julian_day, y = factor(year), fill = organism)) +
+  geom_density_ridges(alpha = 0.5) +
+  scale_fill_manual(values = c("#c2a5cf", "#a6dba0")) +
+  xlim(c(50, NA)) +
+  theme_bw() +
+  ylab("Year") +
+  xlab("Julian day") +
+  ggtitle("Low GDD")
+
+med_gdd %>% 
+  mutate(year = factor(year, levels = rev(sort(unique(year))))) %>%
+  ggplot(mapping = aes(x = julian_day, y = factor(year), fill = organism)) +
+  geom_density_ridges(alpha = 0.5) +
+  scale_fill_manual(values = c("#c2a5cf", "#a6dba0")) +
+  xlim(c(50, NA)) +
+  theme_bw() +
+  ylab("Year") +
+  xlab("Julian day") +
+  ggtitle("Medium GDD")
+
+high_gdd %>% 
+  mutate(year = factor(year, levels = rev(sort(unique(year))))) %>%
+  ggplot(mapping = aes(x = julian_day, y = factor(year), fill = organism)) +
+  geom_density_ridges(alpha = 0.5) +
+  scale_fill_manual(values = c("#c2a5cf", "#a6dba0")) +
+  xlim(c(50, NA)) +
+  theme_bw() +
+  ylab("Year") +
+  xlab("Julian day") +
+  ggtitle("High GDD")
