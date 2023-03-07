@@ -30,7 +30,8 @@ limit_lat <- c(15, 70)
 # Taxa to download with GBIF identifier
 taxon_keys <- c("Pieris virginiensis" = 5137890,
                 "Cardamine concatenata" = 3046217,
-                "Cardamine diphylla" = 3045717)
+                "Cardamine diphylla" = 3045717,
+                "Boechera laevigata" = 3043265)
                 # "Alliaria petiolata" = 5376075)
 
 # Downloads data from GBIF (unless already present or force re-download)
