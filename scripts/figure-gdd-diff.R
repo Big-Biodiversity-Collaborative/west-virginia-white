@@ -10,6 +10,10 @@ require(dplyr)
 # Load in observation data to dictate map bounds
 insect <- read.csv(file = "data/pieris_virginiensis-gbif-clean.csv")
 
+# Only include >= 2000 for plot
+insect <- insect %>%
+  filter(year >= 2000)
+
 # Get extent of map we want to make; extent of WVW +0.25 degrees
 min_lon <- min(insect$longitude) - 0.25
 max_lon <- max(insect$longitude) + 0.25
@@ -47,5 +51,5 @@ gdd_plot <- ggplot(data = gdd_df, mapping = aes(x = x, y = y)) +
   ylab("Latitude") +
   theme_bw()
 gdd_plot
-ggsave(filename = "output/figure-2.png",
+ggsave(filename = "output/figure-1b.png",
        plot = gdd_plot)
