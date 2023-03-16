@@ -3,6 +3,9 @@
 # jcoliver@arizona.edu
 # 2022-11-28
 
+# DEPRECATED
+# See analysis-linear-model.R for linear regression models
+
 library(dplyr)     # data wrangling
 library(lubridate) # Julian day calculations
 library(ggplot2)   # plotting

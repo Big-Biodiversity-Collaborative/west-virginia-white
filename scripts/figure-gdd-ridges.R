@@ -87,9 +87,7 @@ low_gdd_plot <- low_gdd %>%
   scale_fill_manual(values = c("#c2a5cf", "#a6dba0")) +
   xlim(c(50, NA)) +
   theme_bw() +
-  ylab("Year") +
-  xlab("Julian day") +
-  ggtitle("Low GDD")
+  labs(title = "Low GDD", x = "Julian day", y = "Year")
 low_gdd_plot
 ggsave(filename = "output/figure-2a.png",
        plot = low_gdd_plot)
@@ -101,9 +99,7 @@ medium_gdd_plot <- medium_gdd %>%
   scale_fill_manual(values = c("#c2a5cf", "#a6dba0")) +
   xlim(c(50, NA)) +
   theme_bw() +
-  ylab("Year") +
-  xlab("Julian day") +
-  ggtitle("Medium GDD")
+  labs(title = "Medium GDD", x = "Julian day", y = "Year")
 medium_gdd_plot
 ggsave(filename = "output/figure-2b.png",
        plot = medium_gdd_plot)
@@ -115,9 +111,7 @@ high_gdd_plot <- high_gdd %>%
   scale_fill_manual(values = c("#c2a5cf", "#a6dba0")) +
   xlim(c(50, NA)) +
   theme_bw() +
-  ylab("Year") +
-  xlab("Julian day") +
-  ggtitle("High GDD")
+  labs(title = "High GDD", x = "Julian day", y = "Year")
 high_gdd_plot
 ggsave(filename = "output/figure-2c.png",
        plot = high_gdd_plot)

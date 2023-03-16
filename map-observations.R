@@ -3,6 +3,9 @@
 # jcoliver@arizona.edu
 # 2023-03-02
 
+# DEPRECATED
+# See figure-gdd-obs.R for plots of observations
+
 require(ggplot2)
 require(dplyr)
 require(sf)

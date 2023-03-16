@@ -3,6 +3,10 @@
 # jcoliver@arizona.edu
 # 2023-03-03
 
+# DEPRECATED
+# For linear regression models, see analysis-linear-model.R
+# For ridge plots, see figure-gdd-ridges
+
 require(dplyr)
 require(ggplot2)
 require(sf)        # Filtering points in polygon
