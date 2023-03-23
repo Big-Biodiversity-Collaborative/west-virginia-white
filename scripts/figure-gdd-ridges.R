@@ -19,7 +19,8 @@ all_obs <- all_obs %>%
   mutate(organism = factor(organism, levels = c("insect", "host"))) %>%
   mutate(species = factor(species, levels = c("Pieris virginiensis",
                                               "Cardamine concatenata",
-                                              "Cardamine diphylla")))
+                                              "Cardamine diphylla",
+                                              "Borodinia laevigata")))
 
 # The number of observations in a year for a GDD bin (see ridge plots, below) 
 # to be considered for inclusion in the ridge plots

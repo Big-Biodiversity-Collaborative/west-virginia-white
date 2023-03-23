@@ -19,11 +19,10 @@ adults_only <- TRUE
 # Remove observations seen on same day and same lat/lon
 deduplicate <- TRUE
 
-# Problematic GBIF ids; some are know to be misidentifcations, list here
+# Problematic GBIF ids; some are known to be misidentifcations, list here
 gbif_id_remove <- c(3427558396, 3397466009, 3397667698)
 
-# Geographic limits
-# TODO: Need to justify these limits - might need to adopt an envelope approach
+# Rough geographic limits; will further filter later on
 limit_lon <- c(-99, -45)
 limit_lat <- c(15, 70)
 
@@ -31,7 +30,9 @@ limit_lat <- c(15, 70)
 taxon_keys <- c("Pieris virginiensis" = 5137890,
                 "Cardamine concatenata" = 3046217,
                 "Cardamine diphylla" = 3045717,
-                "Boechera laevigata" = 3043265)
+                "Borodinia laevigata" = 8221492,
+                "Boechera laevigata" = 3043265, # J.S.
+                "Arabis laevigata" = 8404988) # J.S.
                 # "Alliaria petiolata" = 5376075)
 
 # Downloads data from GBIF (unless already present or force re-download)

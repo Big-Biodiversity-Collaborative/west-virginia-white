@@ -24,7 +24,8 @@ all_obs <- all_obs %>%
 all_obs$species <- factor(x = all_obs$species,
                           levels = c("Pieris virginiensis",
                                      "Cardamine concatenata",
-                                     "Cardamine diphylla"))
+                                     "Cardamine diphylla",
+                                     "Borodinia laevigata"))
 all_obs$organism <- factor(x = all_obs$organism,
                            levels = c("insect", "host"))
 
@@ -105,7 +106,7 @@ low_gdd_prediction <- ggplot(data = newdata %>% filter(gdd == gdd_points[1]),
                                            y = julian_day,
                                            color = species)) +
   geom_line(lwd = 1) +
-  scale_color_manual(values = c("#7b3294", "#a6dba0","#008837"),
+  scale_color_manual(values = c("#7b3294", "#a6dba0","#008837", "#5aae61"),
                      name = "Species") +
   theme_bw() +
   labs(title = "Low GDD", x = "Year", y = "Julian day")
@@ -119,7 +120,7 @@ medium_gdd_prediction <- ggplot(data = newdata %>% filter(gdd == gdd_points[2]),
                                            y = julian_day,
                                            color = species)) +
   geom_line(lwd = 1) +
-  scale_color_manual(values = c("#7b3294", "#a6dba0","#008837"),
+  scale_color_manual(values = c("#7b3294", "#a6dba0","#008837", "#5aae61"),
                      name = "Species") +
   theme_bw() +
   labs(title = "Medium GDD", x = "Year", y = "Julian day")
@@ -133,7 +134,7 @@ high_gdd_prediction <- ggplot(data = newdata %>% filter(gdd == gdd_points[3]),
                                               y = julian_day,
                                               color = species)) +
   geom_line(lwd = 1) +
-  scale_color_manual(values = c("#7b3294", "#a6dba0","#008837"),
+  scale_color_manual(values = c("#7b3294", "#a6dba0","#008837", "#5aae61"),
                      name = "Species") +
   theme_bw() +
   labs(title = "High GDD", x = "Year", y = "Julian day")
