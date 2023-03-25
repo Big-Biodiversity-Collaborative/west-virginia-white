@@ -5,3 +5,5 @@ wvw-repo.Rproj
 
 data/*-gbif-raw.csv
 data/*-gbif-clean.csv
+output/*
+!output/.gitkeep

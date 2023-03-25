@@ -50,28 +50,39 @@ yearXspecies_lm <- lm(julian_day ~ gdd + year * species,
 # Check to see if this is a better model
 anova(simple_lm, yearXspecies_lm)
 
+ygddXspecies <- lm(julian_day ~ gdd + year + species + 
+                     gdd * species + year * species +
+                     gdd * year * species,
+                   data = all_obs)
+# summary(ygddXspecies)
+anova(yearXspecies_lm, ygddXspecies)
+
 # Now make it three-way interaction among gdd, year, and species
+# Only really adding the gdd * year term
 three_X_lm <- lm(julian_day ~ gdd * year * species,
                  data = all_obs)
 
-# Check to see if this is a better model than the year X species model
-anova(yearXspecies_lm, three_X_lm)
+# Check to see if this is a better model than the gdd X year X species model
+anova(ygddXspecies, three_X_lm)
 
-# Three-way interaction model is best; test for heteroskedasticity
-lmtest::bptest(three_X_lm)
+# Three-way interaction model sans gdd * year is best; test for 
+# heteroskedasticity
+lmtest::bptest(ygddXspecies)
 # studentized Breusch-Pagan test
-# data:  three_X_lm
-# BP = 258.76, df = 11, p-value < 2.2e-16
+# data:  ygddXspecies
+# BP = 320.93, df = 15, p-value < 2.2e-16
 
 # Update the model with residuals-based weights (WLS) (observations with lower 
 # deviation from predicted values in OLS are given more weight)
-resid_lm <- lm(abs(three_X_lm$residuals) ~ three_X_lm$fitted.values)
+resid_lm <- lm(abs(ygddXspecies$residuals) ~ ygddXspecies$fitted.values)
 var_wts <- 1 / (resid_lm$fitted.values^2)
-three_X_wls <- lm(julian_day ~ gdd * year * species,
+ygddXspecies_wls <- lm(julian_day ~ gdd + year + species + 
+                    gdd * species + year * species +
+                    gdd * year * species,
                   data = all_obs,
                   weights = var_wts)
-# summary(three_X_lm)
-# summary(three_X_wls)
+# summary(ygddXspecies)
+# summary(ygddXspecies_wls)
 
 ################################################################################
 # Effect summary
@@ -97,7 +108,7 @@ newdata <- empty_newdata %>%
                 gdd = gdd_points)
 
 # Use desired model to make predictions
-newdata$julian_day <- predict(object = three_X_wls, 
+newdata$julian_day <- predict(object = ygddXspecies_wls, 
                               newdata = newdata)
 # Plot predicted lines
 # Low GDD
