@@ -24,13 +24,12 @@ insect$organism = "insect"
 # Load data for three host plants
 host_concatenata <- read.csv(file = "data/cardamine_concatenata-gbif-clean.csv")
 host_diphylla <- read.csv(file = "data/cardamine_diphylla-gbif-clean.csv")
-# GBIF has separate entries for one of the host plants (synonyms)
+# GBIF has separate entries for one of the host plants (synonyms) that *do not* 
+# come through on a query of the accepted name
 host_laevigata <- read.csv(file = "data/borodinia_laevigata-gbif-clean.csv")
 b_laevigata_sp <- host_laevigata$species[1]
 host_A_laevigata <- read.csv(file = "data/arabis_laevigata-gbif-clean.csv")
-host_B_laevigata <- read.csv(file = "data/boechera_laevigata-gbif-clean.csv")
 host_laevigata <- host_laevigata %>%
-  bind_rows(host_B_laevigata) %>%
   bind_rows(host_A_laevigata) %>%
   mutate(species = b_laevigata_sp)
 
