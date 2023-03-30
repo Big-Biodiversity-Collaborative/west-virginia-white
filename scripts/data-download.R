@@ -31,7 +31,7 @@ taxon_keys <- c("Pieris virginiensis" = 5137890,
                 "Cardamine concatenata" = 3046217,
                 "Cardamine diphylla" = 3045717,
                 "Borodinia laevigata" = 8221492,
-                "Boechera laevigata" = 3043265, # J.S.
+#                "Boechera laevigata" = 3043265, # J.S.
                 "Arabis laevigata" = 8404988) # J.S.
                 # "Alliaria petiolata" = 5376075)
 
