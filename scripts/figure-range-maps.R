@@ -95,3 +95,38 @@ kd_estimate <- ks::kde(x = species_matrix, H = bandwidth)
 plot(kd_estimate, cont = (density_cutoff * 100),
      drawlabels = FALSE, display = "slice",
      col = plot_info$colors[1], add = TRUE, lwd = 2)
+
+
+# If interested in just one host species + insect, can use this code
+# "Cardamine concatenata"
+# "Cardamine diphylla"
+# "Borodinia laevigata"
+host_name <- "Borodinia laevigata"
+species_names <- c("Pieris virginiensis", host_name)
+
+plot_info <- data.frame(species = species_names,
+                        colors = c("#7b3294", "#5cbb5c"))
+plot_drawn <- FALSE
+for (i in 1:nrow(plot_info)) {
+  species_name <- plot_info$species[i]
+  species_matrix <- all_obs %>%
+    filter(species == species_name) %>%
+    dplyr::select(longitude, latitude) %>%
+    as.matrix()  
+  
+  bandwidth <- ks::Hpi(species_matrix)
+  kd_estimate <- ks::kde(x = species_matrix, H = bandwidth)
+  
+  species_color <- plot_info$colors[i]
+  plot(kd_estimate, cont = (density_cutoff * 100),
+       drawlabels = FALSE, display = "filled.contour",
+       col = c("white", species_color), alpha = c(0, 0.5),
+       add = plot_drawn)
+  # Add solid lines for insect
+  if (!plot_drawn) {
+    plot(kd_estimate, cont = (density_cutoff * 100),
+         drawlabels = FALSE, display = "slice",
+         col = species_color, add = TRUE, lwd = 2)
+  }
+  plot_drawn <- TRUE
+}
