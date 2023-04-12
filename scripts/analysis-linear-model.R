@@ -92,13 +92,30 @@ lmtest::bptest(best_model_wls)
 # studentized Breusch-Pagan test
 # 
 # data:  ygddXspecies_wls
+# The test statistic is chi-squared
 # BP = 12.591, df = 15, p-value = 0.6338
 
 ################################################################################
 # Effect summary
 model_results <- broom::tidy(best_model_wls)
 
-# TODO: Need to extract numbers & do the math
+# Clean up the table for human eyes
+model_table <- model_results %>%
+  mutate(term = gsub(x = term, pattern = "gdd", replacement = "GDD")) %>%
+  mutate(term = gsub(x = term, pattern = "year", replacement = "Year")) %>%
+  mutate(term = gsub(x = term, pattern = "species", replacement = "")) %>%
+  mutate(term = gsub(x = term, pattern = "Year:", replacement = "Year x ")) %>%
+  mutate(term = gsub(x = term, pattern = "GDD:", replacement = "GDD x ")) %>%
+  mutate(term = gsub(x = term, pattern = "(Intercept)", replacement = "Intercept"))
+
+# Do not need such precision!
+model_table <- model_table %>%
+  mutate(across(.cols = estimate:p.value, .fns = signif, digits = 3))
+
+# Write to a file
+write.csv(file = "output/model-table.csv",
+          x = model_table,
+          row.names = FALSE)
 
 ################################################################################
 # Plot responses
