@@ -117,6 +117,11 @@ write.csv(file = "output/model-table.csv",
           x = model_table,
           row.names = FALSE)
 
+# TODO: Math here
+# How many days/year earlier for:
+#    + each species
+#    + each GDD (will be an "average" for each of three categories)
+
 ################################################################################
 # Plot responses
 # Want three sub-plots, one for low GDD, medium GDD, high GDD
@@ -140,13 +145,21 @@ newdata <- empty_newdata %>%
 newdata$julian_day <- predict(object = best_model_wls, 
                               newdata = newdata)
 # Plot predicted lines
+# Want to have same Julian day scale on each plot
+jd_limits <- c(min(newdata$julian_day), max(newdata$julian_day))
+
 # Low GDD
-low_gdd_prediction <- ggplot(data = newdata %>% filter(gdd == gdd_points[1]), 
+# B. laevigata is not present at low GDD sites (there are only three records
+# at low GDD locations), so do not include that species in this plot
+low_gdd_prediction <- ggplot(data = newdata %>% 
+                               filter(gdd == gdd_points[1]) %>%
+                               filter(species != "Borodinia laevigata"), 
                              mapping = aes(x = year, 
                                            y = julian_day,
                                            color = species)) +
   geom_line(lwd = 1) +
-  scale_color_manual(values = c("#7b3294", "#a6dba0","#008837", "#5aae61"),
+  ylim(jd_limits) +
+  scale_color_manual(values = c("#7b3294", "#a6dba0","#008837"),
                      name = "Species") +
   theme_bw() +
   labs(title = "Low GDD", x = "Year", y = "Julian day")
@@ -160,6 +173,7 @@ medium_gdd_prediction <- ggplot(data = newdata %>% filter(gdd == gdd_points[2]),
                                            y = julian_day,
                                            color = species)) +
   geom_line(lwd = 1) +
+  ylim(jd_limits) +
   scale_color_manual(values = c("#7b3294", "#a6dba0","#008837", "#5aae61"),
                      name = "Species") +
   theme_bw() +
@@ -174,6 +188,7 @@ high_gdd_prediction <- ggplot(data = newdata %>% filter(gdd == gdd_points[3]),
                                               y = julian_day,
                                               color = species)) +
   geom_line(lwd = 1) +
+  ylim(jd_limits) +
   scale_color_manual(values = c("#7b3294", "#a6dba0","#008837", "#5aae61"),
                      name = "Species") +
   theme_bw() +
