@@ -5,10 +5,11 @@
 
 library(dplyr)     # data wrangling
 library(lubridate) # Julian day calculations
-library(ggplot2)   # plotting
 library(terra)     # adding growing degree days data
 library(tidyr)     # expand() for predicted data.frame
 library(lmtest)    # test for heteroskedasticity
+library(broom)     # cleaning up stats output
+library(ggplot2)   # plotting
 library(ggpubr)    # ggarrange() for multi-panel figure
 
 ################################################################################
@@ -36,11 +37,10 @@ gdd <- terra::rast(x = "data/DD5_1991-2020.tif")
 all_obs$gdd <- terra::extract(x = gdd,
                               y = all_obs[, c("longitude", "latitude")])[, 2]
 
-
 ################################################################################
 # Analyses
 # Run linear regression, no interaction
-simple_lm <- lm(julian_day ~ gdd + year + species, 
+simple_lm <- lm(julian_day ~ year + gdd + species, 
                 data = all_obs)
 
 # Add the interaction between year and species
@@ -50,43 +50,77 @@ yearXspecies_lm <- lm(julian_day ~ gdd + year * species,
 # Check to see if this is a better model
 anova(simple_lm, yearXspecies_lm)
 
-ygddXspecies <- lm(julian_day ~ gdd + year + species + 
-                     gdd * species + year * species +
-                     gdd * year * species,
-                   data = all_obs)
-# summary(ygddXspecies)
-anova(yearXspecies_lm, ygddXspecies)
+# Add the interaction between gdd and species (species-specific responses to 
+# local temperatures)
+year_gddXspecies_lm <- lm(julian_day ~ year * species + gdd * species,
+                          data = all_obs)
+# summary(year_gddXspecies_lm)
+anova(yearXspecies_lm, year_gddXspecies_lm)
 
-# Now make it three-way interaction among gdd, year, and species
-# Only really adding the gdd * year term
-three_X_lm <- lm(julian_day ~ gdd * year * species,
+# Now add the last two-way interaction between year and gdd, allowing 
+# gdd-specific responses to year
+all_2way_lm <- lm(julian_day ~ (year + gdd + species)^2,
+                  data = all_obs)
+# summary(all_2way_lm)
+anova(year_gddXspecies_lm, all_2way_lm)
+
+# We can test the full model, although somewhat difficult to justify the three-
+# way interaction term...
+full_model <- lm(julian_day ~ year * gdd * species,
                  data = all_obs)
+# summary(full_model)
+anova(all_2way_lm, full_model)
 
-# Check to see if this is a better model than the gdd X year X species model
-anova(ygddXspecies, three_X_lm)
+# And yet, it fits very well...test for heteroskedasticity
+best_model <- full_model
 
-# Three-way interaction model sans gdd * year is best; test for 
-# heteroskedasticity
-lmtest::bptest(ygddXspecies)
+lmtest::bptest(best_model)
 # studentized Breusch-Pagan test
-# data:  ygddXspecies
-# BP = 320.93, df = 15, p-value < 2.2e-16
+# data:  best_model
+# BP = 316.14, df = 15, p-value < 2.2e-16
 
 # Update the model with residuals-based weights (WLS) (observations with lower 
 # deviation from predicted values in OLS are given more weight)
-resid_lm <- lm(abs(ygddXspecies$residuals) ~ ygddXspecies$fitted.values)
+resid_lm <- lm(abs(best_model$residuals) ~ best_model$fitted.values)
 var_wts <- 1 / (resid_lm$fitted.values^2)
-ygddXspecies_wls <- lm(julian_day ~ gdd + year + species + 
-                    gdd * species + year * species +
-                    gdd * year * species,
-                  data = all_obs,
-                  weights = var_wts)
-# summary(ygddXspecies)
-# summary(ygddXspecies_wls)
+# Update lm call with whichever model was identified as best
+best_model_wls <- update(best_model,
+                         data = all_obs,
+                         weights = var_wts)
+# summary(best_model_wls)
+lmtest::bptest(best_model_wls)
+# studentized Breusch-Pagan test
+# 
+# data:  ygddXspecies_wls
+# The test statistic is chi-squared
+# BP = 12.591, df = 15, p-value = 0.6338
 
 ################################################################################
 # Effect summary
-# TODO: Need to extract numbers & do the math
+model_results <- broom::tidy(best_model_wls)
+
+# Clean up the table for human eyes
+model_table <- model_results %>%
+  mutate(term = gsub(x = term, pattern = "gdd", replacement = "GDD")) %>%
+  mutate(term = gsub(x = term, pattern = "year", replacement = "Year")) %>%
+  mutate(term = gsub(x = term, pattern = "species", replacement = "")) %>%
+  mutate(term = gsub(x = term, pattern = "Year:", replacement = "Year x ")) %>%
+  mutate(term = gsub(x = term, pattern = "GDD:", replacement = "GDD x ")) %>%
+  mutate(term = gsub(x = term, pattern = "(Intercept)", replacement = "Intercept"))
+
+# Do not need such precision!
+model_table <- model_table %>%
+  mutate(across(.cols = estimate:p.value, .fns = signif, digits = 3))
+
+# Write to a file
+write.csv(file = "output/model-table.csv",
+          x = model_table,
+          row.names = FALSE)
+
+# TODO: Math here
+# How many days/year earlier for:
+#    + each species
+#    + each GDD (will be an "average" for each of three categories)
 
 ################################################################################
 # Plot responses
@@ -108,16 +142,24 @@ newdata <- empty_newdata %>%
                 gdd = gdd_points)
 
 # Use desired model to make predictions
-newdata$julian_day <- predict(object = ygddXspecies_wls, 
+newdata$julian_day <- predict(object = best_model_wls, 
                               newdata = newdata)
 # Plot predicted lines
+# Want to have same Julian day scale on each plot
+jd_limits <- c(min(newdata$julian_day), max(newdata$julian_day))
+
 # Low GDD
-low_gdd_prediction <- ggplot(data = newdata %>% filter(gdd == gdd_points[1]), 
+# B. laevigata is not present at low GDD sites (there are only three records
+# at low GDD locations), so do not include that species in this plot
+low_gdd_prediction <- ggplot(data = newdata %>% 
+                               filter(gdd == gdd_points[1]) %>%
+                               filter(species != "Borodinia laevigata"), 
                              mapping = aes(x = year, 
                                            y = julian_day,
                                            color = species)) +
   geom_line(lwd = 1) +
-  scale_color_manual(values = c("#7b3294", "#a6dba0","#008837", "#5aae61"),
+  ylim(jd_limits) +
+  scale_color_manual(values = c("#7b3294", "#a6dba0","#008837"),
                      name = "Species") +
   theme_bw() +
   labs(title = "Low GDD", x = "Year", y = "Julian day")
@@ -131,6 +173,7 @@ medium_gdd_prediction <- ggplot(data = newdata %>% filter(gdd == gdd_points[2]),
                                            y = julian_day,
                                            color = species)) +
   geom_line(lwd = 1) +
+  ylim(jd_limits) +
   scale_color_manual(values = c("#7b3294", "#a6dba0","#008837", "#5aae61"),
                      name = "Species") +
   theme_bw() +
@@ -145,6 +188,7 @@ high_gdd_prediction <- ggplot(data = newdata %>% filter(gdd == gdd_points[3]),
                                               y = julian_day,
                                               color = species)) +
   geom_line(lwd = 1) +
+  ylim(jd_limits) +
   scale_color_manual(values = c("#7b3294", "#a6dba0","#008837", "#5aae61"),
                      name = "Species") +
   theme_bw() +
