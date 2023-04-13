@@ -103,7 +103,8 @@ for (i in 1:length(taxon_keys)) {
     
   # Write these cleaned data to file
   write.csv(x = gbif_obs,
-            file = paste0("data/", nice_name, "-gbif-clean.csv"))
+            file = paste0("data/", nice_name, "-gbif-clean.csv"),
+            row.names = FALSE)
   
   num_clean <- nrow(gbif_obs)
   message("Wrote ", num_clean, " cleaned observations of ", 

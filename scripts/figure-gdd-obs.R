@@ -6,6 +6,7 @@
 require(terra)
 require(ggplot2)
 require(dplyr)
+require(ggpubr)  # For making a multi-panel plot
 
 # Load in observation data (TODO: clean or filtered?)
 insect <- read.csv(file = "data/pieris_virginiensis-gbif-clean.csv")
@@ -44,10 +45,91 @@ gdd_plot <- ggplot(data = gdd_df, mapping = aes(x = x, y = y)) +
                        name = "GDD") +
   geom_point(data = insect, 
              mapping = aes(x = longitude, y = latitude),
-             shape = 1) +
+             shape = 1, size = 0.5) +
   xlab("Longitude") +
   ylab("Latitude") +
-  theme_bw()
+  theme_bw() +
+  theme(legend.position = "none")
 gdd_plot
 ggsave(filename = "output/figure-1a.png",
        plot = gdd_plot)
+
+################################################################################
+# Multi-panel plot, where we have one panel for gdd + WVW obs, and three plots:
+# one for each of the host plant species, with WVW obs, too.
+
+# Start by reading in all observations for each of the host plant species
+host_concatenata <- read.csv(file = "data/cardamine_concatenata-gbif-clean.csv")
+host_diphylla <- read.csv(file = "data/cardamine_diphylla-gbif-clean.csv")
+# GBIF has separate entries for one of the host plants (synonyms) that *do not* 
+# come through on a query of the accepted name
+host_laevigata <- read.csv(file = "data/borodinia_laevigata-gbif-clean.csv")
+b_laevigata_sp <- host_laevigata$species[1]
+host_A_laevigata <- read.csv(file = "data/arabis_laevigata-gbif-clean.csv")
+host_laevigata <- host_laevigata %>%
+  bind_rows(host_A_laevigata) %>%
+  mutate(species = b_laevigata_sp)
+
+host_list <- list(concatenata = list(data = host_concatenata,
+                                     color = "#a6dba0"), 
+                  diphylla = list(data = host_diphylla,
+                                  color = "#008837"),
+                  laevigata = list(data = host_laevigata,
+                                   color = "#5aae61"))
+
+# POC on one host:
+# plot_concatenata <- ggplot(data = gdd_df, mapping = aes(x = x, y = y)) +
+#   geom_raster(fill = "#EFEFEF") + # to just show gray map
+#   geom_point(data = host_concatenata,
+#              mapping = aes(x = longitude, y = latitude),
+#              shape = 1, size = 0.5, color = "#a6dba0") +
+#   geom_point(data = insect, 
+#              mapping = aes(x = longitude, y = latitude),
+#              shape = 19, size = 0.1) +
+#   xlab("Longitude") +
+#   ylab("Latitude") +
+#   ylim(c(min_lat, max_lat)) +
+#   xlim(c(min_lon, max_lon)) +
+#   theme_bw()
+# plot_concatenata
+
+# Vectorized on the list
+host_plots <- lapply(X = host_list, 
+                     FUN = function(x)
+                     {
+                       ggplot(data = gdd_df, mapping = aes(x = x, y = y)) +
+                         geom_raster(fill = "#EFEFEF") + # to just show gray map
+                         geom_point(data = x$data,
+                                    mapping = aes(x = longitude, y = latitude),
+                                    shape = 1, size = 0.5, color = "#96db90") +
+                         geom_point(data = insect, 
+                                    mapping = aes(x = longitude, y = latitude),
+                                    shape = 19, size = 0.1) +
+                         xlab("Longitude") +
+                         ylab("Latitude") +
+                         ylim(c(min_lat, max_lat)) +
+                         xlim(c(min_lon, max_lon)) +
+                         theme_bw()
+                     })
+# host_plots[[1]]
+# host_plots[[2]]
+# host_plots[[3]]
+
+# Now use ggarrange to make a single plot
+# Two step process. Weird.
+plot_list <- list(gdd_plot)
+plot_list <- c(plot_list, host_plots)
+
+# Add titles to plots (works better than ggarrange's approach)
+plot_list[[1]] <- plot_list[[1]] + ggtitle("(a) GDD")
+plot_list[[2]] <- plot_list[[2]] + ggtitle("(b) C. concatenata")
+plot_list[[3]] <- plot_list[[3]] + ggtitle("(c) C. diphylla")
+plot_list[[4]] <- plot_list[[4]] + ggtitle("(d) B. laevigata")
+
+# plot_list <- c(gdd_plot, host_plots[[1]], host_plots[[2]], host_plots[[3]])
+four_panel <- ggpubr::ggarrange(plotlist = plot_list,
+                                ncol = 2,
+                                nrow = 2)
+four_panel
+ggsave(filename = "output/figure-1.png",
+       plot = four_panel)
