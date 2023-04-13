@@ -95,3 +95,43 @@ kd_estimate <- ks::kde(x = species_matrix, H = bandwidth)
 plot(kd_estimate, cont = (density_cutoff * 100),
      drawlabels = FALSE, display = "slice",
      col = plot_info$colors[1], add = TRUE, lwd = 2)
+
+##### A different approach with three plots, one for each host plant
+par(mfrow = c(2, 2))
+insect_matrix <- all_obs %>%
+  filter(species == plot_info$species[1]) %>%
+  dplyr::select(longitude, latitude) %>%
+  as.matrix()
+insect_bandwidth <- ks::Hpi(insect_matrix)
+insect_estimate <- ks::kde(x = insect_matrix, H = insect_bandwidth)
+insect_color <- plot_info$colors[1]
+
+for (i in 2:nrow(plot_info)) {
+  host_name <- plot_info$species[i]
+  
+  # Add insect range as line, plot this first to get the correct map limits
+  plot(insect_estimate, cont = (density_cutoff * 100),
+       drawlabels = FALSE, display = "slice",
+       col = insect_color, lwd = 2, main = host_name)
+
+  host_matrix <- all_obs %>%
+    filter(species == host_name) %>%
+    dplyr::select(longitude, latitude) %>%
+    as.matrix()  
+  
+  bandwidth <- ks::Hpi(host_matrix)
+  kd_estimate <- ks::kde(x = host_matrix, H = bandwidth)
+  
+  host_color <- plot_info$colors[i]
+  
+  plot(kd_estimate, cont = (density_cutoff * 100),
+       drawlabels = FALSE, display = "filled.contour",
+       col = c("white", host_color), alpha = c(0, 0.5), add = TRUE)
+  
+  # Add insect range as line
+  # TODO: Not sure this is necessary...
+  plot(insect_estimate, cont = (density_cutoff * 100),
+       drawlabels = FALSE, display = "slice",
+       col = insect_color, lwd = 2, add = TRUE)
+}
+par(mfrow = c(1, 1))
