@@ -121,14 +121,55 @@ write.csv(file = "output/model-table.csv",
 # How many days/year earlier for:
 #    + each species
 #    + each GDD (will be an "average" for each of three categories)
+# Full (best) model is
+# Julian Day = B0 + B1 x year + B2 x gdd + B3 x species +
+#                   B4 x year x gdd + B5 x year x species + B6 x gdd x species +
+#                   B7 x year x gdd x species
+# For insect (assumes insect is reference level for species), change in the 
+# number of days / year is
+# B1 + B4 x GDD
+# For hosts, change in number of days / year is
+# B1 + B5 + GDD x (B4 + B7)
+# where B5 and B7 have specific values for each host
+
+# Need to have values to substitute in for gdd
+# Prior figures use 33% and 66% as cutoffs. Here we will use 33%/2, 50%, and 
+# (66% + 100%)/2 as the points to use for our predicted values
+gdd_points <- stats::quantile(x = all_obs$gdd[all_obs$organism == "insect"],
+                              probs = c(1/6, 1/2, 5/6))
+
+# Insect delta days/year:
+insect_delta <- model_results$estimate[model_results$term == "year"] +
+  (model_results$estimate[model_results$term == "year:gdd"] * gdd_points)
+
+# Hosts delta days/year:
+# Start by getting names to pull out appropriate terms (skipping first level, 
+# which is the insect)
+host_names <- levels(all_obs$species)[-1]
+host_deltas <- sapply(X = host_names,
+                      FUN = function(x) {
+                        B1 <- model_results$estimate[model_results$term == "year"]
+                        B4 <- model_results$estimate[model_results$term == "year:gdd"]
+                        B5 <- model_results$estimate[model_results$term == paste0("year:species", x)]
+                        B7 <- model_results$estimate[model_results$term == paste0("year:gdd:species", x)]
+                        delta <- B1 + B5 + (gdd_points * (B4 + B7))
+                        return(delta)
+                      })
+host_deltas <- t(host_deltas)
+all_deltas <- rbind(insect_delta, host_deltas)
+rownames(all_deltas)[1] <- levels(all_obs$species)[1]
+colnames(all_deltas) <- c("Low GDD", "Medium GDD", "High GDD")
+all_deltas <- data.frame(species = rownames(all_deltas),
+                         all_deltas)
+rownames(all_deltas) <- NULL
+
+write.csv(x = all_deltas,
+          file = "output/changes-table.csv",
+          row.names = FALSE)
 
 ################################################################################
 # Plot responses
 # Want three sub-plots, one for low GDD, medium GDD, high GDD
-# Prior figures use 33% and 66% as cutoffs. Here we will use 33%/2, 50%, and 
-# (66% + 100%)/2 as the points to use for our predicted values
-gdd_points <- stats::quantile(x = all_obs$gdd[all_obs$organism == "insect"],
-                       probs = c(1/6, 1/2, 5/6))
 
 # Create an empty data frame to hold values we want to make predictions for
 empty_newdata <- data.frame(year = numeric(0),
@@ -148,6 +189,11 @@ newdata$julian_day <- predict(object = best_model_wls,
 # Want to have same Julian day scale on each plot
 jd_limits <- c(min(newdata$julian_day), max(newdata$julian_day))
 
+line_colors <- c("Pieris virginiensis" = "#7b3294",
+                 "Cardamine concatenata" = "#a6dba0",
+                 "Cardamine diphylla" = "#008837",
+                 "Borodinia laevigata" = "#5aae61")
+
 # Low GDD
 # B. laevigata is not present at low GDD sites (there are only three records
 # at low GDD locations), so do not include that species in this plot
@@ -159,7 +205,7 @@ low_gdd_prediction <- ggplot(data = newdata %>%
                                            color = species)) +
   geom_line(lwd = 1) +
   ylim(jd_limits) +
-  scale_color_manual(values = c("#7b3294", "#a6dba0","#008837"),
+  scale_color_manual(values = line_colors,
                      name = "Species") +
   theme_bw() +
   labs(title = "Low GDD", x = "Year", y = "Julian day")
@@ -174,7 +220,7 @@ medium_gdd_prediction <- ggplot(data = newdata %>% filter(gdd == gdd_points[2]),
                                            color = species)) +
   geom_line(lwd = 1) +
   ylim(jd_limits) +
-  scale_color_manual(values = c("#7b3294", "#a6dba0","#008837", "#5aae61"),
+  scale_color_manual(values = line_colors,
                      name = "Species") +
   theme_bw() +
   labs(title = "Medium GDD", x = "Year", y = "Julian day")
@@ -189,7 +235,7 @@ high_gdd_prediction <- ggplot(data = newdata %>% filter(gdd == gdd_points[3]),
                                               color = species)) +
   geom_line(lwd = 1) +
   ylim(jd_limits) +
-  scale_color_manual(values = c("#7b3294", "#a6dba0","#008837", "#5aae61"),
+  scale_color_manual(values = line_colors,
                      name = "Species") +
   theme_bw() +
   labs(title = "High GDD", x = "Year", y = "Julian day")
@@ -198,8 +244,8 @@ ggsave(filename = "output/figure-3c.png",
        plot = high_gdd_prediction)
 
 # Single, multi-panel figure
-multi_panel <- ggpubr::ggarrange(low_gdd_prediction, 
-                                 medium_gdd_prediction, 
-                                 high_gdd_prediction,
-                                 ncol = 1)
-multi_panel
+# multi_panel <- ggpubr::ggarrange(low_gdd_prediction, 
+#                                  medium_gdd_prediction, 
+#                                  high_gdd_prediction,
+#                                  ncol = 1)
+# multi_panel
