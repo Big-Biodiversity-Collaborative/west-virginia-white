@@ -37,15 +37,15 @@ gdd_df <- gdd_df %>%
   rename(GDD = `DD5_1991-2020`)
 
 # Plot GDD data, and add WVW as points
-gdd_palette <- "Spectral" # "YlGnBu"
+gdd_palette <- "YlOrBr" # "YlGnBu" "Spectral"
 gdd_plot <- ggplot(data = gdd_df, mapping = aes(x = x, y = y)) +
   geom_raster(mapping = aes(fill = GDD)) +
   scale_fill_distiller(palette = gdd_palette, 
-                       direction = -1,
+                       direction = 1,
                        name = "GDD") +
   geom_point(data = insect, 
              mapping = aes(x = longitude, y = latitude),
-             shape = 1, size = 0.5) +
+             shape = 19, size = 0.5) +
   xlab("Longitude") +
   ylab("Latitude") +
   theme_bw() +
@@ -83,7 +83,7 @@ host_list <- list(concatenata = list(data = host_concatenata,
 #   geom_point(data = host_concatenata,
 #              mapping = aes(x = longitude, y = latitude),
 #              shape = 1, size = 0.5, color = "#a6dba0") +
-#   geom_point(data = insect, 
+#   geom_point(data = insect,
 #              mapping = aes(x = longitude, y = latitude),
 #              shape = 19, size = 0.1) +
 #   xlab("Longitude") +
@@ -101,10 +101,10 @@ host_plots <- lapply(X = host_list,
                          geom_raster(fill = "#EFEFEF") + # to just show gray map
                          geom_point(data = x$data,
                                     mapping = aes(x = longitude, y = latitude),
-                                    shape = 1, size = 0.5, color = "#96db90") +
+                                    shape = 19, size = 0.75, color = "#96db90") +
                          geom_point(data = insect, 
                                     mapping = aes(x = longitude, y = latitude),
-                                    shape = 19, size = 0.1) +
+                                    shape = 19, size = 0.5, color = "#000000") +
                          xlab("Longitude") +
                          ylab("Latitude") +
                          ylim(c(min_lat, max_lat)) +
@@ -122,11 +122,10 @@ plot_list <- c(plot_list, host_plots)
 
 # Add titles to plots (works better than ggarrange's approach)
 plot_list[[1]] <- plot_list[[1]] + ggtitle("(a) GDD")
-plot_list[[2]] <- plot_list[[2]] + ggtitle("(b) C. concatenata")
-plot_list[[3]] <- plot_list[[3]] + ggtitle("(c) C. diphylla")
-plot_list[[4]] <- plot_list[[4]] + ggtitle("(d) B. laevigata")
+plot_list[[2]] <- plot_list[[2]] + ggtitle(expression(paste("(b) ", italic("C. concatenata"))))
+plot_list[[3]] <- plot_list[[3]] + ggtitle(expression(paste("(c) ", italic("C. diphylla"))))
+plot_list[[4]] <- plot_list[[4]] + ggtitle(expression(paste("(d) ", italic("B. laevigata"))))
 
-# plot_list <- c(gdd_plot, host_plots[[1]], host_plots[[2]], host_plots[[3]])
 four_panel <- ggpubr::ggarrange(plotlist = plot_list,
                                 ncol = 2,
                                 nrow = 2)
