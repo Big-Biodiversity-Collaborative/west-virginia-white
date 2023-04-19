@@ -5,6 +5,9 @@
 
 # TODO: Really early proof of concept here
 
+# Most of this goal is accomplished by the multi-panel plot produced by 
+# scripts/figure-gdd-obs.R
+
 require(dplyr)
 require(tidyr)
 require(lubridate) # Julian days

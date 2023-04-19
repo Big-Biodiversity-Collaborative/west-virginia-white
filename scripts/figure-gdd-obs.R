@@ -1,4 +1,4 @@
-# Make a figure with growing degree days and WVW observations overlaid
+# Make a figure with growing degree days, insect and host plant observations
 # Jeff Oliver
 # jcoliver@arizona.edu
 # 2023-03-06
