@@ -33,7 +33,7 @@ currently just the one function for downloading data from GBIF.
 folder are not under version control
 + scripts: R scripts for data analysis and visualization
   + analysis-linear-model.R: Linear regression analysis for yearly change in
-  julian day of observations
+  julian day of observations, includes plotting statistical model results
   + analysis-polynomial-model. R: DEPRECATED Host plant polynomial model
   + data-download.R: Download data from gbif and do QA/QC as necessary
   + data-prepare.R: Prepare data for analyses and plotting; includes time 

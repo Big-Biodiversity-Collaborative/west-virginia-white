@@ -167,6 +167,21 @@ write.csv(x = all_deltas,
           file = "output/changes-table.csv",
           row.names = FALSE)
 
+# We are especially interested in how the plants are responding relative to 
+# the insect, so compare all host_deltas to the insect_delta
+compared_to_insect <- t(apply(X = host_deltas, 
+                              MARGIN = 1, 
+                              FUN = function(x) { x - insect_delta }))
+colnames(compared_to_insect) <- c("Low GDD", "Medium GDD", "High GDD")
+# Negative values: Number of days earlier hosts are shifting each year
+# Positive values: Number of days later hosts are shifting each year
+compared_to_insect <- data.frame(species = rownames(compared_to_insect),
+                                 compared_to_insect)
+rownames(compared_to_insect) <- NULL
+write.csv(x = compared_to_insect,
+          file = "output/changes-rel-insect.csv",
+          row.names = FALSE)
+
 ################################################################################
 # Plot responses
 # Want three sub-plots, one for low GDD, medium GDD, high GDD
