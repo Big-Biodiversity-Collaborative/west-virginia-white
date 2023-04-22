@@ -50,6 +50,18 @@ all_obs <- all_obs %>%
   filter(year <= max_year) %>%
   filter(year >= min_year)
 
+# Write some basic information about number of observations to file (additional 
+# info written at tend of file, too
+counts_file <- "output/observation-counts.txt"
+sink(file = counts_file)
+cat("Total 2000-2022 observations :")
+nrow(all_obs)
+cat("Total 2000-2022 WVW observations :")
+all_obs %>%
+  filter(species == "Pieris virginiensis") %>%
+  nrow()
+sink()
+
 if (pre_summer) {
   all_obs <- all_obs %>%
     filter(month <= 6) %>% # Drop any after June
@@ -116,3 +128,12 @@ if (reality_check) {
 write.csv(x = envelope_obs,
           file = "data/filtered-obs.csv",
           row.names = FALSE)
+
+sink(file = counts_file, append = TRUE)
+cat("Filtered 2000-2022 observations :")
+nrow(envelope_obs)
+cat("Filtered 2000-2022 WVW observations :")
+envelope_obs %>%
+  filter(species == "Pieris virginiensis") %>%
+  nrow()
+sink()
