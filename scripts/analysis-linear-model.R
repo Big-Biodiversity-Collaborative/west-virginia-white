@@ -40,39 +40,74 @@ all_obs$gdd <- terra::extract(x = gdd,
 ################################################################################
 # Analyses
 # Run linear regression, no interaction
-simple_lm <- lm(julian_day ~ year + gdd + species, 
+model_1 <- lm(julian_day ~ year + gdd + species, 
                 data = all_obs)
 
 # Add the interaction between year and species
-yearXspecies_lm <- lm(julian_day ~ gdd + year * species,
+model_2 <- lm(julian_day ~ gdd + year * species,
                       data = all_obs)
 
 # Check to see if this is a better model
-anova(simple_lm, yearXspecies_lm)
+anova(model_1, model_2)
 
-# Add the interaction between gdd and species (species-specific responses to 
-# local temperatures)
-year_gddXspecies_lm <- lm(julian_day ~ year * species + gdd * species,
-                          data = all_obs)
-# summary(year_gddXspecies_lm)
-anova(yearXspecies_lm, year_gddXspecies_lm)
-
-# Now add the last two-way interaction between year and gdd, allowing 
-# gdd-specific responses to year
-all_2way_lm <- lm(julian_day ~ (year + gdd + species)^2,
+# Add the two-way interaction between year and gdd, allowing gdd-specific 
+# responses to year, across all species
+model_3 <- lm(julian_day ~ year * species + year * gdd,
                   data = all_obs)
-# summary(all_2way_lm)
-anova(year_gddXspecies_lm, all_2way_lm)
+# summary(model_3)
+anova(model_2, model_3)
 
-# We can test the full model, although somewhat difficult to justify the three-
-# way interaction term...
-full_model <- lm(julian_day ~ year * gdd * species,
+# Now add the last two-way interaction between gdd and species (species-
+# specific responses to local temperatures)
+model_4 <- lm(julian_day ~ (year + gdd + species)^2,
+              data = all_obs)
+# summary(model_4)
+anova(model_3, model_4)
+
+# Full model includes
+model_5 <- lm(julian_day ~ year * gdd * species,
                  data = all_obs)
-# summary(full_model)
-anova(all_2way_lm, full_model)
+# summary(model_5)
+anova(model_4, model_5)
 
-# And yet, it fits very well...test for heteroskedasticity
-best_model <- full_model
+# Collate model comparison results
+# Table should have:
+# Predictors | F | df | P
+# Put all models in a list for easier computation
+all_models <- list(model_1, model_2, model_3, model_4, model_5)
+# Extract terms (predictors) for each model and put in a character vector
+model_terms <- unlist(lapply(X = all_models,
+                             FUN = function(x) {
+                               paste(attributes(x$terms)$term.labels, collapse = ", ")
+                             }))
+# Some text cleanup
+model_terms <- gsub(x = model_terms,
+                    pattern = ":",
+                    replacement = " x ")
+model_terms <- tools::toTitleCase(model_terms)
+model_terms <- gsub(x = model_terms,
+                    pattern = "Gdd",
+                    replacement = "GDD")
+
+# Setup data frame to hold model comparison results 
+model_compare <- data.frame(Predictors = model_terms,
+                            F = NA_real_,
+                            df = NA_integer_,
+                            p = NA_real_)
+for (i in 2:length(all_models)) {
+  compare_fit <- anova(all_models[[i - 1]], all_models[[i]])
+  # Vectors of model comparison stats all have NA in first element
+  model_compare$F[i] <- round(compare_fit$F[2], digits = 3)
+  model_compare$df[i] <- compare_fit$Df[2]
+  model_compare$p[i] <- compare_fit$`Pr(>F)`[2]
+}
+
+write.csv(x = model_compare,
+          file = "output/model-compare.csv",
+          row.names = FALSE)
+
+# Full model is best fit...test for heteroskedasticity
+best_model <- model_5
 
 lmtest::bptest(best_model)
 # studentized Breusch-Pagan test
@@ -117,7 +152,6 @@ write.csv(file = "output/model-table.csv",
           x = model_table,
           row.names = FALSE)
 
-# TODO: Math here
 # How many days/year earlier for:
 #    + each species
 #    + each GDD (will be an "average" for each of three categories)
