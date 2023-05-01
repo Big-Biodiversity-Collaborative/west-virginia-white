@@ -3,9 +3,10 @@
 ## Summary
 
 This repository includes code for investigations of variation of flight times 
-in the West Virginia White (_Pieris virginiensis_) over time. The work relies 
-on data hosted by the Global Biodiversity Information Facility 
-([GBIF](https://gbif.org)).
+in the West Virginia White (_Pieris virginiensis_) and associated host plant 
+species over time. The work relies on data hosted by the Global Biodiversity 
+Information Facility ([GBIF](https://gbif.org)) and [Climate NA](https://climatena.ca/spatialData) 
+(Wang et al. 2016).
 
 ## Dependencies
 
@@ -33,18 +34,25 @@ currently just the one function for downloading data from GBIF.
 folder are not under version control
 + scripts: R scripts for data analysis and visualization
   + analysis-linear-model.R: Linear regression analysis for yearly change in
-  julian day of observations, includes plotting statistical model results
+  Julian day of observations, includes plotting statistical model results
   + analysis-polynomial-model. R: DEPRECATED Host plant polynomial model
   + data-download.R: Download data from gbif and do QA/QC as necessary
   + data-prepare.R: Prepare data for analyses and plotting; includes time 
-  filtering (2000-2020) and geographic restriction to _P. virginiensis_' range
+  filtering (2000-2020) and geographic restriction to _P. virginiensis_' 
+  approximate range
   + figure-gdd-diff.R: DEPRECATED Figure showing change in growing degree days
   between 1961-1990 and 1990-2020
-  + figure-gdd-obs.R: Figure with growing degree days, insect and host plant
+  + figure-gdd-obs.R: Figure with growing degree days and insect and host plant
   observations
   + figure-gdd-ridges.R: Ridge plots of observations for growing degree day 
   bins
   + figure-gdd-vs-gdd-diff.R: Plot of gdd and delta gdd for observational data
-  + figure-range-maps.R: Approximate range maps for insect and hosts
+  + figure-range-maps.R: DEPRECATED Approximate range maps for insect and hosts
 + templates: DEPRECATED RMarkdown templates that were part of early exploratory 
 data analysis
+
+## References
+
+Wang T, Hamann A, Spittlehouse D, Carroll C (2016) Locally Downscaled and 
+Spatially Customizable Climate Data for Historical and Future Periods for North 
+America. PLoS ONE 11(6): e0156720. doi:[10.1371/journal.pone.0156720](https://doi.org/10.1371/journal.pone.0156720)

@@ -205,13 +205,21 @@ write.csv(x = all_deltas,
 # the insect, so compare all host_deltas to the insect_delta
 compared_to_insect <- t(apply(X = host_deltas, 
                               MARGIN = 1, 
-                              FUN = function(x) { x - insect_delta }))
-colnames(compared_to_insect) <- c("Low GDD", "Medium GDD", "High GDD")
+                              FUN = function(x) { 
+                                round(x - insect_delta, digits = 2)
+                              }))
+colnames(compared_to_insect) <- c("Low_GDD", "Medium_GDD", "High_GDD")
 # Negative values: Number of days earlier hosts are shifting each year
 # Positive values: Number of days later hosts are shifting each year
 compared_to_insect <- data.frame(species = rownames(compared_to_insect),
                                  compared_to_insect)
 rownames(compared_to_insect) <- NULL
+# Change Low GDD B. laevigata to missing since it does not occur in low GDD 
+# sites
+compared_to_insect <- compared_to_insect %>%
+  mutate(Low_GDD = if_else(species == "Borodinia laevigata",
+                           true = NA_real_,
+                           false = Low_GDD))
 write.csv(x = compared_to_insect,
           file = "output/changes-rel-insect.csv",
           row.names = FALSE)
