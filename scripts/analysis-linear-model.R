@@ -192,10 +192,17 @@ host_deltas <- sapply(X = host_names,
 host_deltas <- t(host_deltas)
 all_deltas <- rbind(insect_delta, host_deltas)
 rownames(all_deltas)[1] <- levels(all_obs$species)[1]
-colnames(all_deltas) <- c("Low GDD", "Medium GDD", "High GDD")
+colnames(all_deltas) <- c("Low_GDD", "Medium_GDD", "High_GDD")
 all_deltas <- data.frame(species = rownames(all_deltas),
                          all_deltas)
 rownames(all_deltas) <- NULL
+
+# Change Low GDD B. laevigata to missing since it does not occur in low GDD 
+# sites
+all_deltas <- all_deltas %>%
+  mutate(Low_GDD = if_else(species == "Borodinia laevigata",
+                           true = NA_real_,
+                           false = Low_GDD))
 
 write.csv(x = all_deltas,
           file = "output/changes-table.csv",
