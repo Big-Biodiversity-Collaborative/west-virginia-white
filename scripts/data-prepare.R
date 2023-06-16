@@ -7,6 +7,13 @@ require(dplyr)
 require(lubridate) # Julian days
 require(ks)        # Estimating density envelope
 
+# Restricts observations to 
+#   + those occurring in specific time envelope (see min_year & max_year)
+#   + those occurring within a density envelope of P. virginiensis observations 
+#     (see density_cutoff for percentage)
+#   + those occurring before the first day of summer of the year (optional, see
+#     pre_summer)
+
 # Set up filter values
 min_year <- 2000
 max_year <- 2022

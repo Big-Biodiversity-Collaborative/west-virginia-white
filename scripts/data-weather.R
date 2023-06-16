@@ -9,8 +9,9 @@ library(lubridate) # getting starting & ending dates
 library(dplyr)     # creating data for query
 
 # Using resources from https://www.rcc-acis.org/docs_webservices.html, 
-# specificially will be using gridded data - documentation available at 
+# specifically will be using gridded data - documentation available at 
 # https://www.rcc-acis.org/docs_webservices.html#title24
+# Much comes courtesy of M. Crimmins @mcrimmins
 
 # Create a JSON object with query parameters, e.g.
 # {"loc":"-78.5,39.2",
@@ -74,30 +75,37 @@ query_obs <- all_obs %>%
   mutate(month_start = lubridate::ymd(paste0(year, "-", month, "-01"))) %>%
   mutate(sdate = format(month_start %m-% months(1), "%Y-%m-%d"),
          edate = format(month_start %m+% months(1) - days(1), "%Y-%m-%d")) %>%
-  select(loc, sdate, edate) %>%
+  select(loc, sdate, edate, gbifID) %>%
   mutate(grid = "21",
          elems = "avgt")
 
-some_obs <- query_obs[1:200, ]
+# For testing purposes, try it out on 200 rows
+# query_obs <- query_obs[sample(x = 1:nrow(query_obs), size = 200), ]
 print_freq <- 100
-sleep_freq <- 5
-for (i in 1:nrow(some_obs)) {
-  # if (i %% print_freq == 0 || i == 1) {
-    message("Querying ", i, " of ", nrow(some_obs))
-  # }
+sleep_freq <- 10
+# Data frame to hold results, only need identifier (gbifID) and mean value
+means_df <- data.frame(gbifID = query_obs$gbifID,
+                       avgt = NA_real_)
+start_time <- Sys.time()
+for (i in 1:nrow(query_obs)) {
+  if (i %% print_freq == 0 || i == 1) {
+    message("Querying ", i, " of ", nrow(query_obs))
+  }
   if (i %% sleep_freq == 0) {
     Sys.sleep(1)
   }
-  # Pull out single row of observations
-  x <- some_obs[i, ]
+  # Drop identifier column and pull out single row of observations
+  x <- query_obs %>%
+    select(-gbifID) %>%
+    slice(i)
 
-  # Turn the data frame into a json object each row becomes an element
+  # Turn the data frame into a json object; each row becomes an element
   obs_JSON <- jsonlite::toJSON(x)
   
   # Web service doesn't like containing square braces, so remove those
   obs_JSON <- substr(x = obs_JSON,
-                      start = 2,
-                      stop = nchar(obs_JSON) - 1)
+                     start = 2,
+                     stop = nchar(obs_JSON) - 1)
   
   # Post the JSON to the web service
   query_result_JSON <- postForm(uri = "https://data.rcc-acis.org/GridData",
@@ -106,35 +114,25 @@ for (i in 1:nrow(some_obs)) {
                                                             Accept = "application/json")))
   # Convert the JSON response into a data frame
   query_result <- as.data.frame(jsonlite::fromJSON(query_result_JSON))
-  # First column is date, second is temperature (everything returned is text)
-  mean_value <- mean(as.numeric(query_result[, 2]), na.rm = TRUE)
+  # First column is date, second is temperature (everything returned as text)
+  colnames(query_result) <- c("Date", "Temperature")
+
+  # Missing values are returned as -999, convert to numeric then use NA
+  query_result <- query_result %>%
+    mutate(Temperature = as.numeric(Temperature)) %>%
+    mutate(Temperature = if_else(Temperature < -273, 
+                                 true = NA,
+                                 false = Temperature))
+
+  # Convert second column (temperature, F) to Celsius
+  query_result <- query_result %>%
+    mutate(Temperature = (Temperature - 32) * (5/9))
+
+  # Calculate mean for this lat/long/date coord
+  means_df$avgt[i] <- mean(query_result$Temperature, na.rm = TRUE)
 }
+Sys.time() - start_time
 
-#' Query web service and calculate mean temperature
-calc_temp <- function(df) {
-  
-}
-
-lon <- -78.5
-lat <- 39.2
-grid <- 21
-base <- 40
-sdate <- "2020-03-01"
-edate <- "2020-04-30"
-
-jsonQuery=paste0('{"loc":"',lon,',',lat,'","grid":"21","elems":"avgt","sdate":"',sdate,'","edate":"',edate,'"}')
-
-paste_result <- postForm(uri = "http://data.rcc-acis.org/GridData",
-                        .opts = list(postfields = jsonQuery,
-                                     httpheader = c("Content-Type" = "application/json",
-                                                    Accept = "application/json")))
-
-df_result_out <- as.data.frame(jsonlite::fromJSON(df_result))
-paste_result_out <- as.data.frame(jsonlite::fromJSON(paste_result))
-
-jsonQuery=paste0('{"loc":"',lon,',',lat,'","grid":"21","elems":"gdd',base,',pcpn","sdate":"',sdate,'","edate":"',edate,'"}')
-out<-postForm("http://data.rcc-acis.org/GridData",
-              .opts = list(postfields = jsonQuery,
-                           httpheader = c('Content-Type' = 'application/json', Accept = 'application/json')))
-out<-fromJSON(out)
-temp<-as.data.frame(out$data)
+write.csv(file = "data/temperature-obs.csv", 
+          x = means_df,
+          row.names = FALSE)
