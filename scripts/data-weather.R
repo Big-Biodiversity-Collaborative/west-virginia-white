@@ -33,6 +33,13 @@ df <- data.frame(loc = "-78.5,39.2",
                  sdate = "2020-03-01",
                  edate = "2020-04-30")
 
+# Test 1.1: single location, missing data
+df <- data.frame(loc = "-79.56943,43.19078",
+                 grid = "21",
+                 elems = "avgt",
+                 sdate = "2016-03-01",
+                 edate = "2016-04-30")
+
 # Turn the data frame into a json object each row becomes an element
 df_asJSON <- jsonlite::toJSON(df)
 
