@@ -7,7 +7,18 @@ library(jsonlite)  # creating json objects & extracting json responses
 library(RCurl)     # posting query
 library(lubridate) # getting starting & ending dates
 library(dplyr)     # creating data for query
+library(tidyr)     # pivoting to wide
 
+# TODO: Needs revision
+#   + ACIS doesn't include Canada data :(
+#   + MODISTools download of VIIRS temperature data can error out and is 
+#     painfully slow
+#   + Could try direct queries for Daymet data; see 
+#     https://daymet.ornl.gov/web_services
+
+################################################################################
+# ACIS approach
+################################################################################
 # Using resources from https://www.rcc-acis.org/docs_webservices.html, 
 # specifically will be using gridded data - documentation available at 
 # https://www.rcc-acis.org/docs_webservices.html#title24
@@ -143,3 +154,156 @@ Sys.time() - start_time
 write.csv(file = "data/temperature-obs.csv", 
           x = means_df,
           row.names = FALSE)
+
+################################################################################
+# VIIRS temperature via MODISTools
+################################################################################
+library(MODISTools)
+prods <- MODISTools::mt_products()
+temperature_rows <- grep("temperature", 
+                         ignore.case = TRUE, 
+                         x = prods$description)
+# The temperature products
+# prods[temperature_rows, ]
+# Look at bands for subset of products
+# mt_bands(product = "MOD11A2")
+# mt_bands(product = "MOD21A2")
+# mt_bands(product = "VNP21A2") # <---- this one has temperature data
+viirs_product <- "VNP21A2"
+viirs_bands <- c("LST_Day_1KM", "LST_Night_1KM")
+
+all_obs <- read.csv(file = "data/filtered-obs.csv")
+all_obs <- all_obs %>%
+  select(longitude, latitude, year, month, gbifID) %>%
+  rename(lat = latitude,
+         lon = longitude) %>%
+  mutate(month_start = lubridate::ymd(paste0(year, "-", month, "-01"))) %>%
+  mutate(sdate = format(month_start %m-% months(1), "%Y-%m-%d"),
+         edate = format(month_start %m+% months(1) - days(1), "%Y-%m-%d"))
+
+# One query test
+# viirs_query <- mt_subset(product = viirs_product,
+#                         band = viirs_bands,
+#                         lat = 49.03333333,
+#                         lon = -122.65,
+#                         start = "2019-01-01",
+#                         end = "2020-12-30")
+
+# Only 10 sites
+# query_obs <- all_obs[1:10, ]
+# 100 sites
+query_obs <- all_obs[sample(x = 1:nrow(all_obs), size = 100), ]
+# The full data set
+# query_obs <- all_obs
+temp_list <- vector(mode = "list", length = nrow(query_obs))
+start <- Sys.time()
+for (site_i in 1:nrow(query_obs)) {
+  site_name <- query_obs$site_name[site_i]
+  message("Running query for site ", site_name, 
+          " (", site_i, " of ", nrow(query_obs), ")")
+  # Run the query
+  viirs_query <- mt_subset(product = viirs_product,
+                           band = viirs_bands,
+                           lat = query_obs$lat[site_i],
+                           lon = query_obs$lon[site_i],
+                           start = query_obs$sdate[site_i],
+                           end = query_obs$edate[site_i],
+                           progress = FALSE)
+
+  # Returned query has Kelvin temperature that needs to be scaled, note valid 
+  # values are 7500 - 65535, so replace anything outside that range with NA
+  # Replace values with Celsius (multiply by scale and subtract 273)
+  viirs_query <- viirs_query %>%
+    select(band, latitude, longitude, value, scale) %>%
+    mutate(value = if_else(between(value, 
+                                   left = 7500,
+                                   right = 65535),
+                           true = value,
+                           false = NA)) %>%
+    mutate(value = (value * as.numeric(scale)) - 273.15)
+  
+  # Calculate two-month mean for each of two values
+  viirs_summary <- viirs_query %>%
+    group_by(band) %>%
+    summarize(mean_temp = mean(value, na.rm = TRUE))
+  
+  # Wrangle a bit to get into two-column format
+  viirs_result <- viirs_summary %>%
+    pivot_wider(names_from = band, values_from = mean_temp) %>%
+    rename(day_temp = LST_Day_1KM,
+           night_temp = LST_Night_1KM)
+  
+  temp_list[[site_i]] <- viirs_result
+}
+end <- Sys.time()
+# Bundle all the results back together
+all_temps <- temp_list %>%
+  bind_rows()
+rownames(all_temps) <- NULL
+end - start
+
+# For a single site
+site_i <- 5000
+viirs_query <- mt_subset(product = viirs_product,
+                         band = viirs_bands,
+                         lat = query_obs$lat[site_i],
+                         lon = query_obs$lon[site_i],
+                         start = query_obs$sdate[site_i],
+                         end = query_obs$edate[site_i])
+# Returned query has Kelvin temperature that needs to be scaled, note valid 
+# values are 7500 - 65535, so replace anything outside that range with NA
+# Replace values with Celsius (multiply by scale and subtract 273)
+viirs_query <- viirs_query %>%
+  select(band, latitude, longitude, value, scale) %>%
+  mutate(value = if_else(between(value, 
+                                 left = 7500,
+                                 right = 65535),
+                         true = value,
+                         false = NA)) %>%
+  mutate(value = (value * as.numeric(scale)) - 273.15)
+
+# Calculate two-month mean for each of two values
+viirs_summary <- viirs_query %>%
+  group_by(band) %>%
+  summarize(mean_temp = mean(value, na.rm = TRUE))
+
+  
+
+################################################################################
+# Daymet temperature via MODISTools
+################################################################################
+# Did not ever get this to work (always returned 400 error)
+daymet_bands <- MODISTools::mt_bands(product = "Daymet")
+# 1 dayl                  Day length (s/day)     s/day            1
+# 2 prcp              Precipitation (mm/day)    mm/day            1
+# 3 srad         Shortwave radiation (W/m^2)      W/m2            1
+# 4  swe      Snow water equivalent (kg/m^2)     kg/m2            1
+# 5 tmax Maximum air temperature (degrees C) degrees C            1
+# 6 tmin Minimum air temperature (degrees C) degrees C            1
+# 7   vp           Water vapor pressure (Pa)        Pa            1
+daymet_product <- "Daymet"
+daymet_bands <- c("tmax", "tmin")
+
+site_i <- 5000
+daymet_query <- mt_subset(product = daymet_product,
+                          band = daymet_bands,
+                          lat = query_obs$lat[site_i],
+                          lon = query_obs$lon[site_i],
+                          start = query_obs$sdate[site_i],
+                          end = query_obs$edate[site_i])
+
+# Works:
+ndvi_query <- mt_subset(product = "MOD13Q1",
+                          band = "250m_16_days_NDVI",
+                          lat = 49.03333333,
+                          lon = -122.65,
+                          start = "2019-01-01",
+                          end = "2020-12-30")
+
+# Doesn't work (request fails)
+daymet_query <- mt_subset(product = daymet_product,
+                        band = daymet_bands[1],
+                        lat = 49.03333333,
+                        lon = -122.65,
+                        start = "2019-01-01",
+                        end = "2020-12-30")
