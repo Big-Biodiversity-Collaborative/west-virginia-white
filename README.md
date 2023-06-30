@@ -44,6 +44,10 @@ folder are not under version control
   + data-prepare.R: Prepare data for analyses and plotting; includes time 
   filtering (2000-2020) and geographic restriction to _P. virginiensis_' 
   approximate range
+  + eda-avgt-distribution.R: exploratory visualizations of geographic, 
+  temporal, and taxonomic distribution of two-month temperature averages
+  + eda-gdd-distribution.R: exploratory visualizations of geographic 
+  distribution of growing degree day values
   + figure-gdd-diff.R: DEPRECATED Figure showing change in growing degree days
   between 1961-1990 and 1990-2020
   + figure-gdd-obs.R: Figure with growing degree days and insect and host plant

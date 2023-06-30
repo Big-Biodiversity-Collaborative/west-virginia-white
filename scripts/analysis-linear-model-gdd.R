@@ -103,7 +103,7 @@ for (i in 2:length(all_models)) {
 }
 
 write.csv(x = model_compare,
-          file = "output/model-compare.csv",
+          file = "output/model-compare-gdd.csv",
           row.names = FALSE)
 
 # Full model is best fit...test for heteroskedasticity
@@ -145,10 +145,10 @@ model_table <- model_results %>%
 
 # Do not need such precision!
 model_table <- model_table %>%
-  mutate(across(.cols = estimate:p.value, .fns = signif, digits = 3))
-
+  # mutate(across(.cols = estimate:p.value, .fns = signif, digits = 3))
+  mutate(across(.cols = estimate:p.value, \(x) signif(x, digits = 3)))
 # Write to a file
-write.csv(file = "output/model-table.csv",
+write.csv(file = "output/model-table-gdd.csv",
           x = model_table,
           row.names = FALSE)
 
@@ -205,7 +205,7 @@ all_deltas <- all_deltas %>%
                            false = Low_GDD))
 
 write.csv(x = all_deltas,
-          file = "output/changes-table.csv",
+          file = "output/changes-table-gdd.csv",
           row.names = FALSE)
 
 # We are especially interested in how the plants are responding relative to 
@@ -228,7 +228,7 @@ compared_to_insect <- compared_to_insect %>%
                            true = NA_real_,
                            false = Low_GDD))
 write.csv(x = compared_to_insect,
-          file = "output/changes-rel-insect.csv",
+          file = "output/changes-rel-insect-gdd.csv",
           row.names = FALSE)
 
 ################################################################################

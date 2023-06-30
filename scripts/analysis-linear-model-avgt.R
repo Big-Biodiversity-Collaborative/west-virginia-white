@@ -1,11 +1,10 @@
 # Linear regression analysis for yearly change in julian day
 # Jeff Oliver
 # jcoliver@arizona.edu
-# 2023-03-16
+# 2023-06-28
 
 library(dplyr)     # data wrangling
 library(lubridate) # Julian day calculations
-# library(terra)     # adding growing degree days data
 library(tidyr)     # expand() for predicted data.frame
 library(lmtest)    # test for heteroskedasticity
 library(broom)     # cleaning up stats output
@@ -58,7 +57,7 @@ anova(model_1, model_2)
 model_3 <- lm(julian_day ~ year * species + year * avgt,
                   data = all_obs)
 # summary(model_3)
-anova(model_2, model_3)
+anova(model_2, model_3) # N.S.
 
 # Now add the last two-way interaction between gdd and species (species-
 # specific responses to local temperatures)
@@ -147,8 +146,10 @@ model_table <- model_results %>%
   mutate(term = gsub(x = term, pattern = "(Intercept)", replacement = "Intercept"))
 
 # Do not need such precision!
+# Funky new behavior of across
 model_table <- model_table %>%
-  mutate(across(.cols = estimate:p.value, .fns = signif, digits = 3))
+  # mutate(across(.cols = estimate:p.value, .fns = signif, digits = 3))
+  mutate(across(.cols = estimate:p.value, \(x) signif(x, digits = 3)))
 
 # Write to a file
 write.csv(file = "output/model-table-avgt.csv",
@@ -251,24 +252,37 @@ newdata <- empty_newdata %>%
                 avgt = avgt_points)
 
 # Use desired model to make predictions
-newdata$julian_day <- predict(object = best_model_wls, 
-                              newdata = newdata)
+jd_predict <- predict(object = best_model_wls, 
+                              newdata = newdata,
+                              se.fit = TRUE)
+newdata$julian_day <- jd_predict$fit
+newdata$jd_se <- jd_predict$se.fit
+
 # Plot predicted lines
 # Want to have same Julian day scale on each plot
-jd_limits <- c(min(newdata$julian_day), max(newdata$julian_day))
+jd_limits <- c(min(newdata$julian_day - newdata$jd_se), 
+               max(newdata$julian_day + newdata$jd_se))
 
 line_colors <- c("Pieris virginiensis" = "#7b3294",
                  "Cardamine concatenata" = "#a6dba0",
                  "Cardamine diphylla" = "#008837",
                  "Borodinia laevigata" = "#5aae61")
 
+line_colors <- c("Pieris virginiensis" = "#BEBADA",
+                 "Cardamine concatenata" = "#8DD3C7",
+                 "Cardamine diphylla" = "#8DD37C",
+                 "Borodinia laevigata" = "#FB8072")
+
+
 # Low temperature
 low_avgt_prediction <- ggplot(data = newdata %>% 
                                 filter(avgt == avgt_points[1]), 
                               mapping = aes(x = year, 
-                                            y = julian_day,
                                             color = species)) +
-  geom_line(lwd = 1) +
+  geom_line(lwd = 1, mapping = aes(y = julian_day)) + # predicted lines
+  geom_line(linetype = 2, mapping = aes(y = julian_day - jd_se)) + # Lower SE
+  geom_line(linetype = 2, mapping = aes(y = julian_day + jd_se)) + # Upper SE
+  # geom_jitter(data = all_obs, size = 0.5, alpha = 0.5) +
   ylim(jd_limits) +
   scale_color_manual(values = line_colors,
                      name = "Species") +
@@ -281,10 +295,12 @@ low_avgt_prediction
 # Medium temperature
 medium_avgt_prediction <- ggplot(data = newdata %>% 
                                    filter(avgt == avgt_points[2]), 
-                             mapping = aes(x = year, 
-                                           y = julian_day,
-                                           color = species)) +
-  geom_line(lwd = 1) +
+                                 mapping = aes(x = year, 
+                                               color = species)) +
+  geom_line(lwd = 1, mapping = aes(y = julian_day)) + # predicted lines
+  geom_line(linetype = 2, mapping = aes(y = julian_day - jd_se)) + # Lower SE
+  geom_line(linetype = 2, mapping = aes(y = julian_day + jd_se)) + # Upper SE
+  # geom_jitter(data = all_obs, size = 0.5, alpha = 0.5) +
   ylim(jd_limits) +
   scale_color_manual(values = line_colors,
                      name = "Species") +
@@ -297,10 +313,12 @@ medium_avgt_prediction
 # High temperature
 high_avgt_prediction <- ggplot(data = newdata %>% 
                                  filter(avgt == avgt_points[3]), 
-                                mapping = aes(x = year, 
-                                              y = julian_day,
-                                              color = species)) +
-  geom_line(lwd = 1) +
+                               mapping = aes(x = year, 
+                                             color = species)) +
+  geom_line(lwd = 1, mapping = aes(y = julian_day)) + # predicted lines
+  geom_line(linetype = 2, mapping = aes(y = julian_day - jd_se)) + # Lower SE
+  geom_line(linetype = 2, mapping = aes(y = julian_day + jd_se)) + # Upper SE
+  # geom_jitter(data = all_obs, size = 0.5, alpha = 0.5) +
   ylim(jd_limits) +
   scale_color_manual(values = line_colors,
                      name = "Species") +
