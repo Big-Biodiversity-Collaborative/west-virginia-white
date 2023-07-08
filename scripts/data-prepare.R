@@ -16,7 +16,7 @@ require(ks)        # Estimating density envelope
 
 # Set up filter values
 min_year <- 2000
-max_year <- 2022
+max_year <- 2023
 # If true, will exclude observations after June 21 of each year
 pre_summer <- TRUE
 # Cutoff for inclusion in density envelope
