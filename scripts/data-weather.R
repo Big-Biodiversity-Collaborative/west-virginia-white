@@ -356,8 +356,10 @@ all_obs <- all_obs %>%
 # query_obs <- all_obs[sample(x = 1:nrow(all_obs), size = 100),]
 # 100 observations takes about 1.75 minutes to process
 # Sample 1000 rows
-query_obs <- all_obs[sample(x = 1:nrow(all_obs), size = 1000),]
+# query_obs <- all_obs[sample(x = 1:nrow(all_obs), size = 1000),]
 # About 16 minutes when there are no queried values on disk
+# All observations
+query_obs <- all_obs
 
 # Iterations between progress message
 print_freq <- 100
@@ -386,6 +388,12 @@ if (file.exists(temperature_file)) {
 daymet_base_url <- "https://daymet.ornl.gov/single-pixel/api/data?"
 start_time <- Sys.time()
 for (i in 1:nrow(query_obs)) {
+  if (i %% print_freq == 0 || i == 1) {
+    message("Querying ", i, " of ", nrow(query_obs))
+  }
+  if (i %% sleep_freq == 0) {
+    Sys.sleep(runif(n = 1, min = 1, max = 2))
+  }
   # First make sure we do not already have data for this observation on file
   gbifID <- query_obs$gbifID[i]
   row_on_disk <- which(means_df$gbifID == gbifID)
@@ -404,12 +412,6 @@ for (i in 1:nrow(query_obs)) {
   }
   if (proceed) {
     # Missing one or both pieces of data, so go ahead with query
-    if (i %% print_freq == 0 || i == 1) {
-      message("Querying ", i, " of ", nrow(query_obs))
-    }
-    if (i %% sleep_freq == 0) {
-      Sys.sleep(runif(n = 1, min = 1, max = 2))
-    }
     # Build the query 
     daymet_url <- paste0(daymet_base_url,
                          "lat=", query_obs$latitude[i],
