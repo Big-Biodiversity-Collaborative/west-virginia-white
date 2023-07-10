@@ -1,4 +1,4 @@
-# Linear regression analysis for yearly change in julian day
+# Linear regression analysis for yearly change in julian day incl. midpoint temp
 # Jeff Oliver
 # jcoliver@arizona.edu
 # 2023-06-28
@@ -30,44 +30,46 @@ all_obs$organism <- factor(x = all_obs$organism,
                            levels = c("insect", "host"))
 
 # Add temperature data from data-weather.R
-avgt <- read.csv(file = "data/temperature-obs.csv")
+temperature <- read.csv(file = "data/temperature-obs.csv")
 all_obs <- all_obs %>%
-  left_join(avgt, by = "gbifID")
+  left_join(temperature, by = "gbifID")
 
 # Since models will include temperature, drop any observations that are missing 
-# temperature data
+# temperature data and calculate the midpoint temperature (mean of tmin and 
+# tmax)
 all_obs <- all_obs %>%
-  filter(!is.na(avgt))
+  filter(!is.na(tmin) & !is.na(tmax)) %>%
+  mutate(tmid = (tmin + tmax)/2) # mean didn't work?!?
 
 ################################################################################
 # Analyses
 # Run linear regression, no interaction
-model_1 <- lm(julian_day ~ year + avgt + species, 
+model_1 <- lm(julian_day ~ year + tmid + species, 
                 data = all_obs)
 
 # Add the interaction between year and species
-model_2 <- lm(julian_day ~ avgt + year * species,
+model_2 <- lm(julian_day ~ tmid + year * species,
                       data = all_obs)
 
 # Check to see if this is a better model
 anova(model_1, model_2)
 
-# Add the two-way interaction between year and avgt, allowing avgt-specific 
+# Add the two-way interaction between year and tmid, allowing tmid-specific 
 # responses to year, across all species
-model_3 <- lm(julian_day ~ year * species + year * avgt,
+model_3 <- lm(julian_day ~ year * species + year * tmid,
                   data = all_obs)
 # summary(model_3)
-anova(model_2, model_3) # N.S.
+anova(model_2, model_3)
 
-# Now add the last two-way interaction between gdd and species (species-
-# specific responses to local temperatures)
-model_4 <- lm(julian_day ~ (year + avgt + species)^2,
+# Now add two-way interaction between tmid and species (species-specific 
+# responses to local temperatures)
+model_4 <- lm(julian_day ~ (year + tmid + species)^2,
               data = all_obs)
 # summary(model_4)
 anova(model_3, model_4)
 
 # Full model includes
-model_5 <- lm(julian_day ~ year * avgt * species,
+model_5 <- lm(julian_day ~ year * tmid * species,
                  data = all_obs)
 # summary(model_5)
 anova(model_4, model_5)
@@ -88,7 +90,7 @@ model_terms <- gsub(x = model_terms,
                     replacement = " x ")
 model_terms <- tools::toTitleCase(model_terms)
 model_terms <- gsub(x = model_terms,
-                    pattern = "Avgt",
+                    pattern = "Tmid",
                     replacement = "Temperature")
 
 # Setup data frame to hold model comparison results 
@@ -105,7 +107,7 @@ for (i in 2:length(all_models)) {
 }
 
 write.csv(x = model_compare,
-          file = "output/model-compare-avgt.csv",
+          file = "output/model-compare-tmid.csv",
           row.names = FALSE)
 
 # Full model is best fit...test for heteroskedasticity
@@ -114,7 +116,7 @@ best_model <- model_5
 lmtest::bptest(best_model)
 # studentized Breusch-Pagan test
 # data:  best_model
-# BP = 100.2, df = 15, p-value < 1.198e-14
+# BP = 97.939, df = 15, p-value = 3.203e-14
 
 # Update the model with residuals-based weights (WLS) (observations with lower 
 # deviation from predicted values in OLS are given more weight)
@@ -130,7 +132,7 @@ lmtest::bptest(best_model_wls)
 # 
 # data:  best_model_wls
 # The test statistic is chi-squared
-# BP = 7.6189, df = 15, p-value = 0.9382
+# BP = 9.8623, df = 15, p-value = 0.8283
 
 ################################################################################
 # Effect summary
@@ -138,11 +140,11 @@ model_results <- broom::tidy(best_model_wls)
 
 # Clean up the table for human eyes
 model_table <- model_results %>%
-  mutate(term = gsub(x = term, pattern = "avgt", replacement = "Temperature")) %>%
+  mutate(term = gsub(x = term, pattern = "tmid", replacement = "Temperature")) %>%
   mutate(term = gsub(x = term, pattern = "year", replacement = "Year")) %>%
   mutate(term = gsub(x = term, pattern = "species", replacement = "")) %>%
   mutate(term = gsub(x = term, pattern = "Year:", replacement = "Year x ")) %>%
-  mutate(term = gsub(x = term, pattern = "avgt:", replacement = "Temperature x ")) %>%
+  mutate(term = gsub(x = term, pattern = "Temperature:", replacement = "Temperature x ")) %>%
   mutate(term = gsub(x = term, pattern = "(Intercept)", replacement = "Intercept"))
 
 # Do not need such precision!
@@ -152,7 +154,7 @@ model_table <- model_table %>%
   mutate(across(.cols = estimate:p.value, \(x) signif(x, digits = 3)))
 
 # Write to a file
-write.csv(file = "output/model-table-avgt.csv",
+write.csv(file = "output/model-table-tmid.csv",
           x = model_table,
           row.names = FALSE)
 
@@ -160,25 +162,25 @@ write.csv(file = "output/model-table-avgt.csv",
 #    + each species
 #    + each Temperature (will be an "average" for each of three categories)
 # Full (best) model is
-# Julian Day = B0 + B1 x year + B2 x avgt + B3 x species +
-#                   B4 x year x avgt + B5 x year x species + B6 x avgt x species +
-#                   B7 x year x avgt x species
+# Julian Day = B0 + B1 x year + B2 x tmid + B3 x species +
+#                   B4 x year x tmid + B5 x year x species + B6 x tmid x species +
+#                   B7 x year x tmid x species
 # For insect (assumes insect is reference level for species), change in the 
 # number of days / year is
-# B1 + B4 x avgt
+# B1 + B4 x tmid
 # For hosts, change in number of days / year is
-# B1 + B5 + avgt x (B4 + B7)
+# B1 + B5 + tmid x (B4 + B7)
 # where B5 and B7 have specific values for each host
 
-# Need to have values to substitute in for avgt
+# Need to have values to substitute in for tmid
 # Prior figures use 33% and 66% as cutoffs. Here we will use 33%/2, 50%, and 
 # (66% + 100%)/2 as the points to use for our predicted values
-avgt_points <- stats::quantile(x = all_obs$avgt[all_obs$organism == "insect"],
+tmid_points <- stats::quantile(x = all_obs$tmid[all_obs$organism == "insect"],
                               probs = c(1/6, 1/2, 5/6))
 
 # Insect delta days/year:
 insect_delta <- model_results$estimate[model_results$term == "year"] +
-  (model_results$estimate[model_results$term == "year:avgt"] * avgt_points)
+  (model_results$estimate[model_results$term == "year:tmid"] * tmid_points)
 
 # Hosts delta days/year:
 # Start by getting names to pull out appropriate terms (skipping first level, 
@@ -187,10 +189,10 @@ host_names <- levels(all_obs$species)[-1]
 host_deltas <- sapply(X = host_names,
                       FUN = function(x) {
                         B1 <- model_results$estimate[model_results$term == "year"]
-                        B4 <- model_results$estimate[model_results$term == "year:avgt"]
+                        B4 <- model_results$estimate[model_results$term == "year:tmid"]
                         B5 <- model_results$estimate[model_results$term == paste0("year:species", x)]
-                        B7 <- model_results$estimate[model_results$term == paste0("year:avgt:species", x)]
-                        delta <- B1 + B5 + (avgt_points * (B4 + B7))
+                        B7 <- model_results$estimate[model_results$term == paste0("year:tmid:species", x)]
+                        delta <- B1 + B5 + (tmid_points * (B4 + B7))
                         return(delta)
                       })
 host_deltas <- t(host_deltas)
@@ -209,7 +211,7 @@ rownames(all_deltas) <- NULL
 #                            false = Low_GDD))
 
 write.csv(x = all_deltas,
-          file = "output/changes-table-avgt.csv",
+          file = "output/changes-table-tmid.csv",
           row.names = FALSE)
 
 # We are especially interested in how the plants are responding relative to 
@@ -232,7 +234,7 @@ rownames(compared_to_insect) <- NULL
 #                            true = NA_real_,
 #                            false = Low_GDD))
 write.csv(x = compared_to_insect,
-          file = "output/changes-rel-insect-avgt.csv",
+          file = "output/changes-rel-insect-tmid.csv",
           row.names = FALSE)
 
 ################################################################################
@@ -243,13 +245,13 @@ write.csv(x = compared_to_insect,
 # Create an empty data frame to hold values we want to make predictions for
 empty_newdata <- data.frame(year = numeric(0),
                             species = character(0),
-                            avgt = numeric(0))
+                            tmid = numeric(0))
 
 # Make the data frame "complete"
 newdata <- empty_newdata %>%
   tidyr::expand(year = unique(all_obs$year),
                 species = unique(all_obs$species),
-                avgt = avgt_points)
+                tmid = tmid_points)
 
 # Use desired model to make predictions
 jd_predict <- predict(object = best_model_wls, 
@@ -275,8 +277,8 @@ line_colors <- c("Pieris virginiensis" = "#BEBADA",
 
 
 # Low temperature
-low_avgt_prediction <- ggplot(data = newdata %>% 
-                                filter(avgt == avgt_points[1]), 
+low_tmid_prediction <- ggplot(data = newdata %>% 
+                                filter(tmid == tmid_points[1]), 
                               mapping = aes(x = year, 
                                             color = species)) +
   geom_line(lwd = 1, mapping = aes(y = julian_day)) + # predicted lines
@@ -288,13 +290,13 @@ low_avgt_prediction <- ggplot(data = newdata %>%
                      name = "Species") +
   theme_bw() +
   labs(title = "Low Temp", x = "Year", y = "Julian day")
-low_avgt_prediction
+low_tmid_prediction
 # ggsave(filename = "output/figure-3a.png",
-#        plot = low_avgt_prediction)
+#        plot = low_tmid_prediction)
 
 # Medium temperature
-medium_avgt_prediction <- ggplot(data = newdata %>% 
-                                   filter(avgt == avgt_points[2]), 
+medium_tmid_prediction <- ggplot(data = newdata %>% 
+                                   filter(tmid == tmid_points[2]), 
                                  mapping = aes(x = year, 
                                                color = species)) +
   geom_line(lwd = 1, mapping = aes(y = julian_day)) + # predicted lines
@@ -306,13 +308,13 @@ medium_avgt_prediction <- ggplot(data = newdata %>%
                      name = "Species") +
   theme_bw() +
   labs(title = "Medium Temp", x = "Year", y = "Julian day")
-medium_avgt_prediction
+medium_tmid_prediction
 # ggsave(filename = "output/figure-3b.png",
-#        plot = medium_avgt_prediction)
+#        plot = medium_tmid_prediction)
 
 # High temperature
-high_avgt_prediction <- ggplot(data = newdata %>% 
-                                 filter(avgt == avgt_points[3]), 
+high_tmid_prediction <- ggplot(data = newdata %>% 
+                                 filter(tmid == tmid_points[3]), 
                                mapping = aes(x = year, 
                                              color = species)) +
   geom_line(lwd = 1, mapping = aes(y = julian_day)) + # predicted lines
@@ -324,13 +326,13 @@ high_avgt_prediction <- ggplot(data = newdata %>%
                      name = "Species") +
   theme_bw() +
   labs(title = "High Temp", x = "Year", y = "Julian day")
-high_avgt_prediction
+high_tmid_prediction
 # ggsave(filename = "output/figure-3c.png",
-#        plot = high_avgt_prediction)
+#        plot = high_tmid_prediction)
 
 # Single, multi-panel figure
-multi_panel <- ggpubr::ggarrange(low_avgt_prediction,
-                                 medium_avgt_prediction,
-                                 high_avgt_prediction,
+multi_panel <- ggpubr::ggarrange(low_tmid_prediction,
+                                 medium_tmid_prediction,
+                                 high_tmid_prediction,
                                  ncol = 1)
 multi_panel
