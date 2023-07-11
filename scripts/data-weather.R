@@ -345,9 +345,11 @@ all_obs <- read.csv(file = "data/filtered-obs.csv")
 
 # Preparing columns we need for query
 all_obs <- all_obs %>%
-  mutate(month_start = lubridate::ymd(paste0(year, "-", month, "-01"))) %>%
-  mutate(sdate = format(month_start %m-% months(1), "%Y-%m-%d"),
-         edate = format(month_start %m+% months(1) - days(1), "%Y-%m-%d")) %>%
+  # mutate(month_start = lubridate::ymd(paste0(year, "-", month, "-01"))) %>%
+  # mutate(sdate = format(month_start %m-% months(1), "%Y-%m-%d"),
+  #        edate = format(month_start %m+% months(1) - days(1), "%Y-%m-%d")) %>%
+  mutate(edate = lubridate::ymd(paste0(year, "-", month, "-", day))) %>%
+  mutate(sdate = format(edate %m-% days(60), "%Y-%m-%d")) %>%
   select(latitude, longitude, sdate, edate, gbifID)
 
 # 10 row test
