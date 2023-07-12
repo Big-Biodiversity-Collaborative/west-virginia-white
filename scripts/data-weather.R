@@ -9,11 +9,11 @@ library(lubridate) # getting starting & ending dates
 library(dplyr)     # creating data for query
 # library(tidyr)     # pivoting to wide
 
-# TODO: Needs revision
+# A work in progress
 #   + ACIS doesn't include Canada data :(
 #   + MODISTools download of VIIRS temperature data can error out and is 
 #     painfully slow
-#   + Could try direct queries for Daymet data; see 
+#   + Direct queries for Daymet data seem to work; see 
 #     https://daymet.ornl.gov/web_services
 
 ################################################################################
@@ -267,8 +267,6 @@ viirs_summary <- viirs_query %>%
   group_by(band) %>%
   summarize(mean_temp = mean(value, na.rm = TRUE))
 
-  
-
 ################################################################################
 # Daymet temperature via MODISTools
 ################################################################################
@@ -333,24 +331,25 @@ daymet_data <- daymet_data %>%
 tmin_mean <- mean(x = daymet_data$tmin, na.rm = TRUE)
 tmax_mean <- mean(x = daymet_data$tmax, na.rm = TRUE)
 
-# Since we are using a web service, we want to do a couple of things:
-#   1. Do some writing to disk *before* everything is done. Timeouts / errors 
-#      should not erase any (or much) progress we made
-#   2. Find out how much duplication of efforts = we only need to download data 
-#      for individual lat/lon/date coordinates once. Only a little savings here
-#      (9010 unique combos, down from 9223 total combos). Skip for now
-
-# Test 2: do loop on subset of actual observations
+####################
+# Real data
 all_obs <- read.csv(file = "data/filtered-obs.csv")
 
 # Preparing columns we need for query
 all_obs <- all_obs %>%
+  # Approach for two month span: observation month & prior month
   # mutate(month_start = lubridate::ymd(paste0(year, "-", month, "-01"))) %>%
   # mutate(sdate = format(month_start %m-% months(1), "%Y-%m-%d"),
   #        edate = format(month_start %m+% months(1) - days(1), "%Y-%m-%d")) %>%
-  mutate(edate = lubridate::ymd(paste0(year, "-", month, "-", day))) %>%
-  mutate(sdate = format(edate %m-% days(60), "%Y-%m-%d")) %>%
+  # Approach for 60 day span, where last day is date of observation
+  # mutate(edate = lubridate::ymd(paste0(year, "-", month, "-", day))) %>%
+  # mutate(sdate = format(edate %m-% days(60), "%Y-%m-%d")) %>%
+  # Approach for "winter/spring" span of four months, February 1 - May 31
+  mutate(sdate = lubridate::ymd(paste0(year, "-02-01")),
+         edate = lubridate::ymd(paste0(year, "-05-31"))) %>%
   select(latitude, longitude, sdate, edate, gbifID)
+
+# Tests: do loop on subset of actual observations
 
 # 10 row test
 # query_obs <- all_obs[sample(x = 1:nrow(all_obs), size = 10),]
@@ -360,6 +359,8 @@ all_obs <- all_obs %>%
 # Sample 1000 rows
 # query_obs <- all_obs[sample(x = 1:nrow(all_obs), size = 1000),]
 # About 16 minutes when there are no queried values on disk
+
+# Doing it for real
 # All observations
 query_obs <- all_obs
 

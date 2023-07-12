@@ -3,6 +3,20 @@
 # jcoliver@arizona.edu
 # 2023-06-28
 
+# TODO: Is this really addressing what we want? The goal is to really control 
+# for variation due to differences in temperature due to latitude and altitude
+# i.e. we know some of the error in julian date is due to local temperatures 
+# rather than year (climate change). *But*, we kind of want to be able to say 
+# this about _sites_ or areas. We don't necessarily know that the spot where 
+# insect experienced a "cool" temperature in the 60-day prior window was also 
+# a "cool" temperature for the plant observation. e.g. An insect was observed 
+# in a spot on March 1, tmid is 3.4 (= Low temperature), at that same spot, a 
+# plant was observed on May 1, tmid is 5.0 (= Medium temperature). Instead, we
+# really want to categorize each of these as the same "temperature bin". 
+# Perhaps instead of tying it to observation date, we set a "spring 
+# temperature" temporal range, say February 1 - May 31. A four-month span that 
+# encompasses the "relevant" period (relevant for the bug, at least)
+
 library(dplyr)     # data wrangling
 library(lubridate) # Julian day calculations
 library(tidyr)     # expand() for predicted data.frame
@@ -59,7 +73,7 @@ anova(model_1, model_2)
 model_3 <- lm(julian_day ~ year * species + year * tmid,
                   data = all_obs)
 # summary(model_3)
-anova(model_2, model_3)
+anova(model_2, model_3) # N.S.
 
 # Now add two-way interaction between tmid and species (species-specific 
 # responses to local temperatures)
@@ -116,7 +130,7 @@ best_model <- model_5
 lmtest::bptest(best_model)
 # studentized Breusch-Pagan test
 # data:  best_model
-# BP = 97.939, df = 15, p-value = 3.203e-14
+# BP = 147.48, df = 15, p-value < 2.2e-16
 
 # Update the model with residuals-based weights (WLS) (observations with lower 
 # deviation from predicted values in OLS are given more weight)
@@ -128,11 +142,11 @@ best_model_wls <- update(best_model,
                          weights = var_wts)
 # summary(best_model_wls)
 lmtest::bptest(best_model_wls)
+# The test statistic, BP, is chi-squared
 # studentized Breusch-Pagan test
 # 
 # data:  best_model_wls
-# The test statistic is chi-squared
-# BP = 9.8623, df = 15, p-value = 0.8283
+# BP = 8.0692, df = 15, p-value = 0.921
 
 ################################################################################
 # Effect summary
@@ -203,12 +217,35 @@ all_deltas <- data.frame(species = rownames(all_deltas),
                          all_deltas)
 rownames(all_deltas) <- NULL
 
-# Change Low GDD B. laevigata to missing since it does not occur in low GDD 
-# sites
-# all_deltas <- all_deltas %>%
-#   mutate(Low_GDD = if_else(species == "Borodinia laevigata",
-#                            true = NA_real_,
-#                            false = Low_GDD))
+# We only want appropriate temperature combinations, so look at distribution of 
+# plant tmids relative to each of the three bins based on insect tmid. That is, 
+# if there are no observations of a plant species in low temperature bin, we 
+# don't want those effects in the tables or lines in the corresponding plot.
+tmid_bins <- stats::quantile(x= all_obs$tmid[all_obs$organism == "insect"],
+                             probs = c(1/3, 2/3))
+all_obs <- all_obs %>%
+  mutate(tmid_bin = case_when(tmid <= tmid_bins[1] ~ "Low_Temp",
+                              tmid > tmid_bins[1] & tmid <= tmid_bins[2] ~ "Medium_Temp",
+                              tmid > tmid_bins[2] ~ "High_Temp",
+                              .default = NA_character_)) %>%
+  mutate(tmid_bin = factor(x = tmid_bin, 
+                           levels = c("Low_Temp", "Medium_Temp", "High_Temp")))
+
+table(all_obs$species, all_obs$tmid_bin)
+#                       Low_Temp Medium_Temp High_Temp
+# Pieris virginiensis        299         296       297
+# Cardamine concatenata     1622        1862       736
+# Cardamine diphylla        1312        1660       769
+# Borodinia laevigata         51         151       168
+# All good - each combination present, no need for exclusion
+
+# Might still be useful to visualize?
+ggplot(data = all_obs, mapping = aes(x = longitude, 
+                                     y = latitude, 
+                                     color = tmid_bin)) +
+  geom_point() +
+  facet_wrap(~ species) +
+  theme_bw()
 
 write.csv(x = all_deltas,
           file = "output/changes-table-tmid.csv",
@@ -227,12 +264,7 @@ colnames(compared_to_insect) <- c("Low_Temp", "Medium_Temp", "High_Temp")
 compared_to_insect <- data.frame(species = rownames(compared_to_insect),
                                  compared_to_insect)
 rownames(compared_to_insect) <- NULL
-# Change Low GDD B. laevigata to missing since it does not occur in low GDD 
-# sites
-# compared_to_insect <- compared_to_insect %>%
-#   mutate(Low_GDD = if_else(species == "Borodinia laevigata",
-#                            true = NA_real_,
-#                            false = Low_GDD))
+
 write.csv(x = compared_to_insect,
           file = "output/changes-rel-insect-tmid.csv",
           row.names = FALSE)
