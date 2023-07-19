@@ -1,7 +1,11 @@
 # Linear regression analysis for yearly change in julian day incl. midpoint temp
 # Jeff Oliver
 # jcoliver@arizona.edu
-# 2023-06-28
+# 2023-07-14
+
+# Only includes the two Cardamine hosts
+# TODO: With best model excluding the three-way interaction, the three plots 
+# differ only in intercept - is it necessary to have the three plots, still?
 
 library(dplyr)     # data wrangling
 library(lubridate) # Julian day calculations
@@ -20,12 +24,17 @@ all_obs <- read.csv(file = "data/filtered-obs.csv")
 all_obs <- all_obs %>%
   mutate(julian_day = yday(as.Date(paste(year, month, day, sep = "-"))))
 
+# Only consider two host plants, C. diphylla & C. concatenata
+all_obs <- all_obs %>%
+  filter(species %in% c("Pieris virginiensis",
+                        "Cardamine diphylla",
+                        "Cardamine concatenata"))
+
 # Set leveling so the insect is always reference group
 all_obs$species <- factor(x = all_obs$species,
                           levels = c("Pieris virginiensis",
-                                     "Cardamine concatenata",
                                      "Cardamine diphylla",
-                                     "Borodinia laevigata"))
+                                     "Cardamine concatenata"))
 all_obs$organism <- factor(x = all_obs$organism,
                            levels = c("insect", "host"))
 
@@ -60,10 +69,6 @@ anova(model_1, model_2)
 # responses to year, across all species
 model_3 <- lm(julian_day ~ year * species + year * tmid,
                   data = all_obs)
-# Add the two-way interaction between species & tmid, allowing species-specific
-# responses to temperature
-# model_3 <- lm(julian_day ~ year * species + species * tmid,
-#               data = all_obs)
 summary(model_3)
 anova(model_2, model_3)
 
@@ -78,7 +83,7 @@ anova(model_3, model_4)
 model_5 <- lm(julian_day ~ year * tmid * species,
                  data = all_obs)
 summary(model_5)
-anova(model_4, model_5)
+anova(model_4, model_5) # NS
 
 # Collate model comparison results
 # Table should have:
@@ -116,13 +121,13 @@ write.csv(x = model_compare,
           file = "output/model-compare-tmid.csv",
           row.names = FALSE)
 
-# Full model is best fit...test for heteroskedasticity
-best_model <- model_5
+# Model 4 is best fit; test for heteroskedasticity
+best_model <- model_4
 
 lmtest::bptest(best_model)
 # studentized Breusch-Pagan test
 # data:  best_model
-# BP = 380.17, df = 15, p-value < 2.2e-16
+# BP = 323.42, df = 9, p-value < 2.2e-16
 
 # Update the model with residuals-based weights (WLS) (observations with lower 
 # deviation from predicted values in OLS are given more weight)
@@ -138,7 +143,7 @@ lmtest::bptest(best_model_wls)
 # studentized Breusch-Pagan test
 # 
 # data:  best_model_wls
-# BP = 12.999, df = 15, p-value = 0.6024
+# BP = 11.709, df = 9, p-value = 0.2302
 
 ################################################################################
 # Effect summary
@@ -167,16 +172,15 @@ write.csv(file = "output/model-table-tmid.csv",
 # How many days/year earlier for:
 #    + each species
 #    + each Temperature (will be an "average" for each of three categories)
-# Full (best) model is
+# Best model is
 # Julian Day = B0 + B1 x year + B2 x tmid + B3 x species +
-#                   B4 x year x tmid + B5 x year x species + B6 x tmid x species +
-#                   B7 x year x tmid x species
+#                   B4 x year x tmid + B5 x year x species + B6 x tmid x species
 # For insect (assumes insect is reference level for species), change in the 
 # number of days / year is
-# B1 + B4 x tmid
+# B1 + tmid x B4
 # For hosts, change in number of days / year is
-# B1 + B5 + tmid x (B4 + B7)
-# where B5 and B7 have specific values for each host
+# B1 + tmid x B4 + B5
+# where B5 has specific values for each host
 
 # Need to have values to substitute in for tmid
 # Prior figures use 33% and 66% as cutoffs. Here we will use 33%/2, 50%, and 
@@ -197,8 +201,7 @@ host_deltas <- sapply(X = host_names,
                         B1 <- model_results$estimate[model_results$term == "year"]
                         B4 <- model_results$estimate[model_results$term == "year:tmid"]
                         B5 <- model_results$estimate[model_results$term == paste0("year:species", x)]
-                        B7 <- model_results$estimate[model_results$term == paste0("year:tmid:species", x)]
-                        delta <- B1 + B5 + (tmid_points * (B4 + B7))
+                        delta <- B1 + (tmid_points * B4) + B5
                         return(delta)
                       })
 host_deltas <- t(host_deltas)
@@ -226,16 +229,18 @@ all_obs <- all_obs %>%
 table(all_obs$species, all_obs$tmid_bin)
 #                       Low_Temp Medium_Temp High_Temp
 # Pieris virginiensis        298         297       297
-# Cardamine concatenata      247        1538      2435
 # Cardamine diphylla        1086        1747       908
-# Borodinia laevigata          8          99       263
-# B. laevigata is close to needing to exclude Low_Temp observations
+# Cardamine concatenata      247        1538      2435
 
 # Might still be useful to visualize?
 ggplot(data = all_obs, mapping = aes(x = longitude, 
                                      y = latitude, 
-                                     color = tmid_bin)) +
+                                     color = factor(tmid_bin,
+                                                    levels = c("High_Temp",
+                                                               "Medium_Temp",
+                                                               "Low_Temp")))) +
   geom_point() +
+  scale_color_manual(name = "Temperature", values = c("#CC5522", "#CCCC11", "#5533CC")) +
   facet_wrap(~ species) +
   theme_bw()
 
@@ -245,6 +250,12 @@ write.csv(x = all_deltas,
 
 # We are especially interested in how the plants are responding relative to 
 # the insect, so compare all host_deltas to the insect_delta
+# Code is a lot more complicated than it needs to be with model_4 as best model
+# Because there is no year x tmid x species interaction, the only thing
+# the difference between insect and hosts response are the two values of B5 
+# (one value for each species of host); resultant compared_to_insect matrix 
+# will thus have identical values across a row (no differences among different 
+# temperature zones)
 compared_to_insect <- t(apply(X = host_deltas, 
                               MARGIN = 1, 
                               FUN = function(x) { 
@@ -289,16 +300,19 @@ newdata$jd_se <- jd_predict$se.fit
 jd_limits <- c(min(newdata$julian_day - newdata$jd_se), 
                max(newdata$julian_day + newdata$jd_se))
 
-line_colors <- c("Pieris virginiensis" = "#7b3294",
-                 "Cardamine concatenata" = "#a6dba0",
-                 "Cardamine diphylla" = "#008837",
-                 "Borodinia laevigata" = "#5aae61")
+# line_colors <- c("Pieris virginiensis" = "#7b3294",
+#                  "Cardamine concatenata" = "#a6dba0",
+#                  "Cardamine diphylla" = "#008837",
+#                  "Borodinia laevigata" = "#5aae61")
 
-line_colors <- c("Pieris virginiensis" = "#BEBADA",
-                 "Cardamine concatenata" = "#8DD3C7",
-                 "Cardamine diphylla" = "#8DD37C",
-                 "Borodinia laevigata" = "#FB8072")
+# line_colors <- c("Pieris virginiensis" = "#BEBADA",
+#                  "Cardamine concatenata" = "#8DD3C7",
+#                  "Cardamine diphylla" = "#8DD37C",
+#                  "Borodinia laevigata" = "#FB8072")
 
+line_colors <- c("Pieris virginiensis" = "#BEAED4",
+                 "Cardamine concatenata" = "#FDC086",
+                 "Cardamine diphylla" = "#7FC97F")
 
 # Low temperature
 low_tmid_prediction <- ggplot(data = newdata %>% 
@@ -360,3 +374,53 @@ multi_panel <- ggpubr::ggarrange(low_tmid_prediction,
                                  high_tmid_prediction,
                                  ncol = 1)
 multi_panel
+
+################################################################################
+# Boxplots of observations
+obs_box <- ggplot(data = all_obs, mapping = aes(x = as.factor(year), 
+                                                y = julian_day, 
+                                                fill = species,
+                                                color = species)) +
+  geom_violin(scale = "count") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90))
+obs_box
+
+# Medians
+obs_summary <- all_obs %>%
+  group_by(species, year) %>%
+  summarize(jd_median = median(julian_day, na.rm = TRUE),
+            jd_mean = mean(julian_day, na.rm = TRUE),
+            jd_se = sd(julian_day, na.rm = TRUE)/sqrt(n()))
+med_plot <- ggplot(data = obs_summary, mapping = aes(x = year, 
+                                                     color = species)) +
+  geom_point(mapping = aes(y = jd_median), shape = 1) +
+  geom_point(mapping = aes(y = jd_mean), shape = 3) +
+  theme_bw()
+med_plot
+all_plot <- ggplot(data = all_obs, mapping = aes(x = year, 
+                                                 y = julian_day,
+                                                 color = species)) +
+  geom_point() +
+  theme_bw()
+all_plot
+
+# Just the bug, color by temperature
+insect_plot <- ggplot(data = all_obs %>% filter(organism == "insect"), 
+                      mapping = aes(x = year, 
+                                    y = julian_day,
+                                    color = tmid)) +
+  geom_point(size = 3) +
+  scale_color_continuous(type = "viridis") +
+  theme_bw()
+insect_plot
+
+# One host, colored by temperature
+diphylla_plot <- ggplot(data = all_obs %>% filter(species == "Cardamine diphylla"), 
+                      mapping = aes(x = year, 
+                                    y = julian_day,
+                                    color = tmid)) +
+  geom_point(size = 3) +
+  scale_color_continuous(type = "viridis") +
+  theme_bw()
+diphylla_plot

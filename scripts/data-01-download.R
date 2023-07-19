@@ -11,7 +11,7 @@ source(file = "functions/query_gbif.R")
 replace <- TRUE
 
 # The earliest year of observations to include
-min_year <- 1960
+min_year <- 1980
 
 # restrict insect observations to adults
 adults_only <- TRUE
