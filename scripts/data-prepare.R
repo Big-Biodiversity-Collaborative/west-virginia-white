@@ -12,13 +12,15 @@ require(ks)        # Estimating density envelope
 #   + those occurring within a density envelope of P. virginiensis observations 
 #     (see density_cutoff for percentage)
 #   + those occurring before the first day of summer of the year (optional, see
-#     pre_summer)
+#     pre_summer); generally not necessary? Points that would be filtered out 
+#     by this criterion are already gone after year and density envelope 
+#     filters are applied
 
 # Set up filter values
 min_year <- 2000
 max_year <- 2023
 # If true, will exclude observations after June 21 of each year
-pre_summer <- TRUE
+pre_summer <- FALSE
 # Cutoff for inclusion in density envelope
 density_cutoff <- 0.95
 # Reality check plot (TRUE will run code to print plot)
@@ -72,7 +74,7 @@ sink()
 if (pre_summer) {
   all_obs <- all_obs %>%
     filter(month <= 6) %>% # Drop any after June
-    filter(month < 6 | day < 22) # Drop any after June 21
+    filter(month < 6 | day < 21) # Drop any after June 21
 }
 
 # Set Pieris virginiensis and insect as reference levels

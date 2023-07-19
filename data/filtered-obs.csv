@@ -139,6 +139,7 @@
 141,43.23312,-73.108284,1,"Pieridae","Pieris virginiensis",2022,5,27,"eButterfly",3794921302,NA,"insect",147
 142,42.874405,-73.065923,0,"Pieridae","Pieris virginiensis",2022,5,29,"eButterfly",3795255302,NA,"insect",149
 143,42.94572,-73.00193,1,"Pieridae","Pieris virginiensis",2022,5,31,"eButterfly",3799413305,NA,"insect",151
+144,44.759117,-86.074776,NA,"Pieridae","Pieris virginiensis",2022,9,1,"iNaturalist research-grade observations",3966407494,"Adult","insect",244
 145,35.617163,-83.719247,NA,"Pieridae","Pieris virginiensis",2021,3,21,"iNaturalist research-grade observations",3325539393,NA,"insect",80
 146,35.576975,-83.313151,NA,"Pieridae","Pieris virginiensis",2021,3,20,"iNaturalist research-grade observations",3068056817,NA,"insect",79
 147,35.640167,-83.688003,NA,"Pieridae","Pieris virginiensis",2021,3,28,"iNaturalist research-grade observations",3097175495,NA,"insect",87
@@ -642,6 +643,7 @@
 661,44.626032,-78.54987,2,"Pieridae","Pieris virginiensis",2016,5,20,"eButterfly",3397437416,NA,"insect",141
 662,44.644534,-78.374491,9,"Pieridae","Pieris virginiensis",2016,5,9,"eButterfly",3397678701,NA,"insect",130
 663,43.455536,-79.963165,4,"Pieridae","Pieris virginiensis",2016,5,7,"eButterfly",3427490911,NA,"insect",128
+664,41.464152,-81.207816,1,"Pieridae","Pieris virginiensis",2016,8,1,"eButterfly",3397436165,NA,"insect",214
 665,35.665655,-83.715366,NA,"Pieridae","Pieris virginiensis",2015,3,29,"iNaturalist research-grade observations",1993704220,NA,"insect",88
 666,35.022286,-85.582041,NA,"Pieridae","Pieris virginiensis",2015,3,31,"iNaturalist research-grade observations",1088934040,NA,"insect",90
 668,35.638656,-83.747405,NA,"Pieridae","Pieris virginiensis",2015,4,4,"iNaturalist research-grade observations",1571056348,NA,"insect",94
@@ -891,6 +893,8 @@
 932,44.64081,-78.45047,1,"Pieridae","Pieris virginiensis",2000,4,30,"eButterfly",3427536618,NA,"insect",121
 940,44.68742,-78.36262,1,"Pieridae","Pieris virginiensis",2000,5,4,"eButterfly",3427484687,NA,"insect",125
 941,44.847788,-85.317185,1,"Pieridae","Pieris virginiensis",2000,6,20,"eButterfly",3397590448,NA,"insect",172
+6,34.709472,-85.376403,NA,"Brassicaceae","Cardamine concatenata",2023,2,11,"iNaturalist research-grade observations",4034883381,NA,"host",42
+12,35.224536,-85.911786,NA,"Brassicaceae","Cardamine concatenata",2023,2,14,"iNaturalist research-grade observations",4034988389,NA,"host",45
 13,36.20141,-83.804302,NA,"Brassicaceae","Cardamine concatenata",2022,2,18,"iNaturalist research-grade observations",3698309506,NA,"host",49
 22,34.995663,-84.867135,NA,"Brassicaceae","Cardamine concatenata",2022,2,25,"iNaturalist research-grade observations",3705525786,NA,"host",56
 23,36.21735,-84.090675,NA,"Brassicaceae","Cardamine concatenata",2022,2,27,"iNaturalist research-grade observations",3743033439,NA,"host",58
@@ -1996,6 +2000,10 @@
 4458,42.120925,-79.993572,NA,"Brassicaceae","Cardamine concatenata",2022,6,9,"iNaturalist research-grade observations",3858522032,NA,"host",160
 4461,42.74928,-76.078898,NA,"Brassicaceae","Cardamine concatenata",2022,6,17,"iNaturalist research-grade observations",3858632116,NA,"host",168
 4464,35.952428,-83.868433,1,"Brassicaceae","Cardamine concatenata",2022,6,2,NA,3955183016,NA,"host",153
+4469,36.121478,-82.086167,NA,"Brassicaceae","Cardamine concatenata",2022,7,2,"iNaturalist research-grade observations",3888828471,NA,"host",183
+4470,36.121593,-82.085918,NA,"Brassicaceae","Cardamine concatenata",2022,7,2,"iNaturalist research-grade observations",3874116338,NA,"host",183
+4471,35.773611,-83.178333,1,"Brassicaceae","Cardamine concatenata",2022,9,3,NA,3998934236,NA,"host",246
+4473,43.93692,-78.836338,1,"Brassicaceae","Cardamine concatenata",2022,10,30,NA,3998683795,NA,"host",303
 4476,34.709622,-85.376572,NA,"Brassicaceae","Cardamine concatenata",2021,2,28,"iNaturalist research-grade observations",3058988227,NA,"host",59
 4477,34.709778,-85.376317,NA,"Brassicaceae","Cardamine concatenata",2021,2,28,"iNaturalist research-grade observations",3058874247,NA,"host",59
 4490,38.841853,-78.325553,NA,"Brassicaceae","Cardamine concatenata",2021,3,17,NA,3357389081,NA,"host",76
@@ -4276,7 +4284,6 @@
 13186,44.964326,-85.922375,NA,"Brassicaceae","Cardamine concatenata",2019,5,5,"iNaturalist research-grade observations",3985683335,NA,"host",125
 13188,43.384602,-80.344806,NA,"Brassicaceae","Cardamine concatenata",2019,5,14,"iNaturalist research-grade observations",2244298144,NA,"host",134
 13189,36.613225,-81.483938,NA,"Brassicaceae","Cardamine concatenata",2019,5,9,"iNaturalist research-grade observations",2244299625,NA,"host",129
-13191,40.868823,-73.877252,NA,"Brassicaceae","Cardamine concatenata",2019,5,21,"iNaturalist research-grade observations",3859909388,NA,"host",141
 13195,43.509238,-80.183267,NA,"Brassicaceae","Cardamine concatenata",2019,5,22,"iNaturalist research-grade observations",2244321437,NA,"host",142
 13196,43.620092,-79.71968,NA,"Brassicaceae","Cardamine concatenata",2019,5,22,"iNaturalist research-grade observations",2445024428,NA,"host",142
 13201,41.886253,-80.593368,NA,"Brassicaceae","Cardamine concatenata",2019,5,1,"iNaturalist research-grade observations",2574073977,NA,"host",121
@@ -4738,7 +4745,6 @@
 14618,44.776496,-73.321328,NA,"Brassicaceae","Cardamine concatenata",2017,5,18,"iNaturalist research-grade observations",1562954295,NA,"host",138
 14619,44.776524,-73.320743,NA,"Brassicaceae","Cardamine concatenata",2017,5,18,"iNaturalist research-grade observations",1562954279,NA,"host",138
 14621,40.905561,-73.881578,NA,"Brassicaceae","Cardamine concatenata",2017,5,19,"iNaturalist research-grade observations",1640036768,NA,"host",139
-14623,40.86892,-73.877237,NA,"Brassicaceae","Cardamine concatenata",2017,5,23,"iNaturalist research-grade observations",1571075348,NA,"host",143
 14627,35.551467,-83.128892,NA,"Brassicaceae","Cardamine concatenata",2017,5,29,"iNaturalist research-grade observations",1563436412,NA,"host",149
 14634,43.460717,-79.757832,NA,"Brassicaceae","Cardamine concatenata",2017,5,12,"iNaturalist research-grade observations",1584417341,NA,"host",132
 14635,41.579676,-81.421995,NA,"Brassicaceae","Cardamine concatenata",2017,5,28,"iNaturalist research-grade observations",1802675205,NA,"host",148
@@ -5040,7 +5046,6 @@
 15332,39.638596,-78.462972,NA,"Brassicaceae","Cardamine concatenata",2010,4,23,"iNaturalist research-grade observations",3018144254,NA,"host",113
 15335,43.207016,-79.800727,NA,"Brassicaceae","Cardamine concatenata",2010,4,23,"iNaturalist research-grade observations",3090827005,NA,"host",113
 15336,36.422222,-81.592611,NA,"Brassicaceae","Cardamine concatenata",2010,4,25,NA,1844417956,NA,"host",115
-15338,40.868553,-73.876697,NA,"Brassicaceae","Cardamine concatenata",2010,4,4,"Vascular plants",1931031778,NA,"host",94
 15345,41.754,-74.153,2,"Brassicaceae","Cardamine concatenata",2010,4,7,NA,3408440650,NA,"host",97
 15346,41.754,-74.153,1,"Brassicaceae","Cardamine concatenata",2010,4,12,NA,3408373605,NA,"host",102
 15347,41.754,-74.153,1,"Brassicaceae","Cardamine concatenata",2010,4,15,NA,3408331658,NA,"host",105
@@ -5083,6 +5088,7 @@
 15444,43.207232,-79.800963,NA,"Brassicaceae","Cardamine concatenata",2006,4,30,"iNaturalist research-grade observations",3079628633,NA,"host",120
 15447,41.675002,-80.423956,NA,"Brassicaceae","Cardamine concatenata",2006,5,12,NA,2859113195,NA,"host",132
 15448,40.52014,-79.901075,NA,"Brassicaceae","Cardamine concatenata",2006,5,8,NA,2859507669,NA,"host",128
+15450,38.473186,-80.07534,NA,"Brassicaceae","Cardamine concatenata",2006,7,4,NA,1849096906,NA,"host",185
 15451,35.757618,-82.97699,NA,"Brassicaceae","Cardamine concatenata",2005,3,25,"iNaturalist research-grade observations",2237538431,NA,"host",84
 15454,40.43719,-80.36673,NA,"Brassicaceae","Cardamine concatenata",2005,4,27,NA,2859123401,NA,"host",117
 15455,40.01,-80.05916,NA,"Brassicaceae","Cardamine concatenata",2005,4,19,NA,2859120407,NA,"host",109
@@ -5111,6 +5117,12 @@
 15512,41.83166,-73.225,NA,"Brassicaceae","Cardamine concatenata",2001,4,30,NA,699269158,NA,"host",120
 15515,41.5446,-81.4729,NA,"Brassicaceae","Cardamine concatenata",2000,3,23,"R. L. McGregor Herbarium Vascular Plants Collection",176901295,NA,"host",83
 15519,35.748056,-83.205,NA,"Brassicaceae","Cardamine concatenata",2000,4,30,NA,3813166307,NA,"host",121
+2,35.010369,-85.364028,NA,"Brassicaceae","Cardamine diphylla",2023,1,5,"iNaturalist research-grade observations",4014997023,NA,"host",5
+3,34.704145,-83.788995,NA,"Brassicaceae","Cardamine diphylla",2023,1,7,"iNaturalist research-grade observations",4014867185,NA,"host",7
+4,35.303353,-83.654045,NA,"Brassicaceae","Cardamine diphylla",2023,1,7,"iNaturalist research-grade observations",4014943206,NA,"host",7
+5,35.010017,-85.364808,NA,"Brassicaceae","Cardamine diphylla",2023,1,10,"iNaturalist research-grade observations",4018112860,NA,"host",10
+7,36.219116,-85.472549,NA,"Brassicaceae","Cardamine diphylla",2023,1,18,"iNaturalist research-grade observations",4022216968,NA,"host",18
+8,40.430935,-80.169328,NA,"Brassicaceae","Cardamine diphylla",2023,1,28,"iNaturalist research-grade observations",4028946051,NA,"host",28
 10,35.358956,-83.929082,NA,"Brassicaceae","Cardamine diphylla",2022,1,12,"iNaturalist research-grade observations",3456952950,NA,"host",12
 11,34.997412,-85.37178,NA,"Brassicaceae","Cardamine diphylla",2022,1,14,"iNaturalist research-grade observations",3457164364,NA,"host",14
 12,42.152566,-78.031293,NA,"Brassicaceae","Cardamine diphylla",2022,1,12,"iNaturalist research-grade observations",3456554860,NA,"host",12
@@ -5872,8 +5884,28 @@
 1057,44.045494,-72.882989,NA,"Brassicaceae","Cardamine diphylla",2022,6,10,"iNaturalist research-grade observations",3858497759,NA,"host",161
 1058,45.081131,-85.213363,NA,"Brassicaceae","Cardamine diphylla",2022,6,18,"iNaturalist research-grade observations",3859059246,NA,"host",169
 1059,46.79143,-84.339231,NA,"Brassicaceae","Cardamine diphylla",2022,6,18,"iNaturalist research-grade observations",3902295309,NA,"host",169
+1062,41.712656,-78.772624,NA,"Brassicaceae","Cardamine diphylla",2022,6,29,"iNaturalist research-grade observations",4009731477,NA,"host",180
+1063,41.713287,-78.771707,NA,"Brassicaceae","Cardamine diphylla",2022,6,29,"iNaturalist research-grade observations",4009748508,NA,"host",180
+1064,36.910703,-82.93341,NA,"Brassicaceae","Cardamine diphylla",2022,6,30,"iNaturalist research-grade observations",3872997800,NA,"host",181
 1066,43.65729,-73.611609,NA,"Brassicaceae","Cardamine diphylla",2022,6,21,"iNaturalist research-grade observations",3903133972,NA,"host",172
 1068,44.755214,-86.05365,1,"Brassicaceae","Cardamine diphylla",2022,6,5,NA,3998085277,NA,"host",156
+1069,43.572609,-80.144297,NA,"Brassicaceae","Cardamine diphylla",2022,7,4,"iNaturalist research-grade observations",3873446932,NA,"host",185
+1071,42.023646,-79.537376,NA,"Brassicaceae","Cardamine diphylla",2022,7,2,"iNaturalist research-grade observations",3903152535,NA,"host",183
+1073,41.739944,-79.067308,NA,"Brassicaceae","Cardamine diphylla",2022,8,6,"iNaturalist research-grade observations",3902507255,NA,"host",218
+1075,36.27784,-82.345786,NA,"Brassicaceae","Cardamine diphylla",2022,10,18,"iNaturalist research-grade observations",3947451926,NA,"host",291
+1076,36.271989,-82.345183,NA,"Brassicaceae","Cardamine diphylla",2022,10,18,"iNaturalist research-grade observations",3947830944,NA,"host",291
+1077,35.593705,-83.632733,NA,"Brassicaceae","Cardamine diphylla",2022,10,29,"iNaturalist research-grade observations",3961475239,NA,"host",302
+1078,35.547478,-83.167244,NA,"Brassicaceae","Cardamine diphylla",2022,10,27,"iNaturalist research-grade observations",3961500369,NA,"host",300
+1079,34.990975,-83.342562,NA,"Brassicaceae","Cardamine diphylla",2022,10,29,"iNaturalist research-grade observations",3961045385,NA,"host",302
+1080,35.271736,-82.708241,NA,"Brassicaceae","Cardamine diphylla",2022,10,31,"iNaturalist research-grade observations",3961079486,NA,"host",304
+1082,36.217113,-84.091819,NA,"Brassicaceae","Cardamine diphylla",2022,11,19,"iNaturalist research-grade observations",3985918469,NA,"host",323
+1083,35.820825,-84.945079,NA,"Brassicaceae","Cardamine diphylla",2022,11,5,"iNaturalist research-grade observations",4015190936,NA,"host",309
+1084,35.770478,-81.692475,NA,"Brassicaceae","Cardamine diphylla",2022,12,2,"iNaturalist research-grade observations",4015007700,NA,"host",336
+1087,36.050323,-82.178001,NA,"Brassicaceae","Cardamine diphylla",2022,12,27,"iNaturalist research-grade observations",4014983746,NA,"host",361
+1088,34.975884,-85.815159,NA,"Brassicaceae","Cardamine diphylla",2022,12,28,"iNaturalist research-grade observations",4011511818,NA,"host",362
+1089,35.698437,-83.509679,NA,"Brassicaceae","Cardamine diphylla",2022,12,29,"iNaturalist research-grade observations",4015116724,NA,"host",363
+1090,35.608307,-82.431904,NA,"Brassicaceae","Cardamine diphylla",2022,12,30,"iNaturalist research-grade observations",4014837720,NA,"host",364
+1091,36.063934,-83.902784,1,"Brassicaceae","Cardamine diphylla",2022,12,4,NA,3999209154,NA,"host",338
 1092,36.490107,-82.470851,NA,"Brassicaceae","Cardamine diphylla",2021,1,2,"iNaturalist research-grade observations",3044734800,NA,"host",2
 1093,39.587742,-79.984108,NA,"Brassicaceae","Cardamine diphylla",2021,1,2,"iNaturalist research-grade observations",3017971830,NA,"host",2
 1094,35.286495,-82.832855,NA,"Brassicaceae","Cardamine diphylla",2021,1,2,"iNaturalist research-grade observations",3018026025,NA,"host",2
@@ -6108,6 +6140,7 @@
 1398,35.149315,-83.348451,NA,"Brassicaceae","Cardamine diphylla",2021,4,18,"iNaturalist research-grade observations",3455289137,NA,"host",108
 1399,43.160031,-73.087145,NA,"Brassicaceae","Cardamine diphylla",2021,4,20,"iNaturalist research-grade observations",3097100307,NA,"host",110
 1400,43.486266,-79.769848,NA,"Brassicaceae","Cardamine diphylla",2021,4,20,"iNaturalist research-grade observations",3097405337,NA,"host",110
+1401,41.272138,-82.403172,NA,"Brassicaceae","Cardamine diphylla",2021,4,19,"iNaturalist research-grade observations",3456110055,NA,"host",109
 1402,44.402689,-73.064862,NA,"Brassicaceae","Cardamine diphylla",2021,4,20,"iNaturalist research-grade observations",3097115369,NA,"host",110
 1403,43.4512,-79.954658,NA,"Brassicaceae","Cardamine diphylla",2021,4,19,"iNaturalist research-grade observations",3097380383,NA,"host",109
 1404,43.450995,-79.954352,NA,"Brassicaceae","Cardamine diphylla",2021,4,19,"iNaturalist research-grade observations",3097221358,NA,"host",109
@@ -6913,6 +6946,7 @@
 2434,45.117201,-72.361163,1,"Brassicaceae","Cardamine diphylla",2021,5,9,NA,3958226432,NA,"host",129
 2435,44.048389,-79.279117,1,"Brassicaceae","Cardamine diphylla",2021,5,9,NA,3955265700,NA,"host",129
 2438,42.526681,-76.864447,1,"Brassicaceae","Cardamine diphylla",2021,5,14,NA,3954947020,NA,"host",134
+2443,39.734253,-79.72065,NA,"Brassicaceae","Cardamine diphylla",2021,6,23,NA,3396057306,NA,"host",174
 2446,46.473725,-84.956537,NA,"Brassicaceae","Cardamine diphylla",2021,6,2,"iNaturalist research-grade observations",3302470102,NA,"host",153
 2449,43.991645,-80.008436,NA,"Brassicaceae","Cardamine diphylla",2021,6,4,"iNaturalist research-grade observations",3314476498,NA,"host",155
 2450,43.494363,-72.540802,NA,"Brassicaceae","Cardamine diphylla",2021,6,4,"iNaturalist research-grade observations",3301936639,NA,"host",155
@@ -6922,8 +6956,33 @@
 2458,44.445121,-76.138191,NA,"Brassicaceae","Cardamine diphylla",2021,6,5,"iNaturalist research-grade observations",3307531742,NA,"host",156
 2460,39.764932,-79.13724,NA,"Brassicaceae","Cardamine diphylla",2021,6,16,"iNaturalist research-grade observations",3415359656,NA,"host",167
 2464,42.405043,-78.897941,NA,"Brassicaceae","Cardamine diphylla",2021,6,20,"iNaturalist research-grade observations",3325711494,NA,"host",171
+2465,43.857176,-79.45561,NA,"Brassicaceae","Cardamine diphylla",2021,6,22,"iNaturalist research-grade observations",3391319441,NA,"host",173
 2466,46.977078,-84.693932,NA,"Brassicaceae","Cardamine diphylla",2021,6,12,"iNaturalist research-grade observations",3327993655,NA,"host",163
 2467,46.973845,-84.68709,NA,"Brassicaceae","Cardamine diphylla",2021,6,12,"iNaturalist research-grade observations",3328010640,NA,"host",163
+2469,45.0252,-72.722607,NA,"Brassicaceae","Cardamine diphylla",2021,7,18,"iNaturalist research-grade observations",3416083078,NA,"host",199
+2470,45.024881,-72.721196,NA,"Brassicaceae","Cardamine diphylla",2021,7,18,"iNaturalist research-grade observations",3415785679,NA,"host",199
+2471,45.024805,-72.721003,NA,"Brassicaceae","Cardamine diphylla",2021,7,18,"iNaturalist research-grade observations",3415899041,NA,"host",199
+2474,40.1216,-79.238312,NA,"Brassicaceae","Cardamine diphylla",2021,7,8,"iNaturalist research-grade observations",3337631637,NA,"host",189
+2477,42.526681,-76.864447,1,"Brassicaceae","Cardamine diphylla",2021,7,8,NA,3959103794,NA,"host",189
+2479,35.035446,-83.915749,NA,"Brassicaceae","Cardamine diphylla",2021,9,23,"iNaturalist research-grade observations",3947102457,NA,"host",266
+2481,35.510669,-83.303414,NA,"Brassicaceae","Cardamine diphylla",2021,10,14,"iNaturalist research-grade observations",3398764960,NA,"host",287
+2482,34.792307,-83.787365,NA,"Brassicaceae","Cardamine diphylla",2021,10,25,"iNaturalist research-grade observations",3398932105,NA,"host",298
+2484,42.996269,-81.260708,NA,"Brassicaceae","Cardamine diphylla",2021,11,3,"iNaturalist research-grade observations",3911988461,NA,"host",307
+2485,35.629031,-83.728649,NA,"Brassicaceae","Cardamine diphylla",2021,11,6,"iNaturalist research-grade observations",3416015578,NA,"host",310
+2487,35.687958,-83.53865,NA,"Brassicaceae","Cardamine diphylla",2021,11,14,"iNaturalist research-grade observations",3415865860,NA,"host",318
+2488,34.157146,-84.076492,NA,"Brassicaceae","Cardamine diphylla",2021,11,21,"iNaturalist research-grade observations",3947482495,NA,"host",325
+2489,35.118283,-85.341063,NA,"Brassicaceae","Cardamine diphylla",2021,11,21,"iNaturalist research-grade observations",3455454716,NA,"host",325
+2490,35.692392,-82.197083,NA,"Brassicaceae","Cardamine diphylla",2021,11,24,"iNaturalist research-grade observations",3947641498,NA,"host",328
+2491,42.735061,-72.663439,NA,"Brassicaceae","Cardamine diphylla",2021,11,11,"iNaturalist research-grade observations",4028621240,NA,"host",315
+2492,35.370584,-83.1099,NA,"Brassicaceae","Cardamine diphylla",2021,12,4,"iNaturalist research-grade observations",3947563501,NA,"host",338
+2495,36.166849,-82.092006,NA,"Brassicaceae","Cardamine diphylla",2021,12,11,"iNaturalist research-grade observations",3456841466,NA,"host",345
+2496,35.157256,-83.559772,NA,"Brassicaceae","Cardamine diphylla",2021,12,21,"iNaturalist research-grade observations",3457101341,NA,"host",355
+2499,42.443222,-78.880028,NA,"Brassicaceae","Cardamine diphylla",2021,12,26,"iNaturalist research-grade observations",3456095651,NA,"host",360
+2500,35.839887,-82.090726,NA,"Brassicaceae","Cardamine diphylla",2021,12,29,"iNaturalist research-grade observations",3456597095,NA,"host",363
+2501,35.516151,-83.023514,NA,"Brassicaceae","Cardamine diphylla",2021,12,29,"iNaturalist research-grade observations",3455554901,NA,"host",363
+2502,41.003042,-73.90409,NA,"Brassicaceae","Cardamine diphylla",2021,12,30,"iNaturalist research-grade observations",3456939193,NA,"host",364
+2503,36.153694,-81.735939,NA,"Brassicaceae","Cardamine diphylla",2021,12,30,"iNaturalist research-grade observations",3456951089,NA,"host",364
+2504,36.276726,-83.913931,NA,"Brassicaceae","Cardamine diphylla",2021,12,30,"iNaturalist research-grade observations",3455921363,NA,"host",364
 2505,40.508949,-80.194977,NA,"Brassicaceae","Cardamine diphylla",2020,1,4,"iNaturalist research-grade observations",2620110382,NA,"host",4
 2506,35.009883,-85.36477,NA,"Brassicaceae","Cardamine diphylla",2020,1,4,"iNaturalist research-grade observations",2550135184,NA,"host",4
 2507,35.586723,-83.359164,NA,"Brassicaceae","Cardamine diphylla",2020,1,9,"iNaturalist research-grade observations",2550171546,NA,"host",9
@@ -7687,7 +7746,24 @@
 3476,42.581108,-72.723158,NA,"Brassicaceae","Cardamine diphylla",2020,6,10,"iNaturalist research-grade observations",2641582569,NA,"host",162
 3479,45.375454,-72.716743,NA,"Brassicaceae","Cardamine diphylla",2020,6,4,"iNaturalist research-grade observations",2984374403,NA,"host",156
 3481,46.765688,-84.317517,NA,"Brassicaceae","Cardamine diphylla",2020,6,16,"iNaturalist research-grade observations",2802724121,NA,"host",168
+3484,43.733864,-79.501524,NA,"Brassicaceae","Cardamine diphylla",2020,6,22,"iNaturalist research-grade observations",2803054799,NA,"host",174
 3485,45.34176,-75.934703,NA,"Brassicaceae","Cardamine diphylla",2020,6,1,"iNaturalist research-grade observations",3005256108,NA,"host",153
+3486,46.991607,-84.529455,NA,"Brassicaceae","Cardamine diphylla",2020,7,1,"iNaturalist research-grade observations",2814038700,NA,"host",183
+3487,44.340265,-78.248665,NA,"Brassicaceae","Cardamine diphylla",2020,7,1,"iNaturalist research-grade observations",2882952392,NA,"host",183
+3489,46.982321,-84.70252,NA,"Brassicaceae","Cardamine diphylla",2020,7,14,"iNaturalist research-grade observations",2862341414,NA,"host",196
+3490,44.581222,-79.454667,NA,"Brassicaceae","Cardamine diphylla",2020,8,1,"iNaturalist research-grade observations",2826341219,NA,"host",214
+3492,35.270378,-83.122642,NA,"Brassicaceae","Cardamine diphylla",2020,10,13,"iNaturalist research-grade observations",2898311085,NA,"host",287
+3493,35.468691,-83.429738,NA,"Brassicaceae","Cardamine diphylla",2020,10,14,"iNaturalist research-grade observations",3044844722,NA,"host",288
+3494,35.322753,-83.569903,NA,"Brassicaceae","Cardamine diphylla",2020,10,22,"iNaturalist research-grade observations",3044644719,NA,"host",296
+3495,44.90624,-85.036841,NA,"Brassicaceae","Cardamine diphylla",2020,10,27,"iNaturalist research-grade observations",2963859028,NA,"host",301
+3496,35.392848,-83.038657,NA,"Brassicaceae","Cardamine diphylla",2020,11,1,"iNaturalist research-grade observations",3044552740,NA,"host",306
+3498,35.373711,-83.22598,NA,"Brassicaceae","Cardamine diphylla",2020,11,23,"iNaturalist research-grade observations",3044735733,NA,"host",328
+3499,35.448895,-83.423016,NA,"Brassicaceae","Cardamine diphylla",2020,11,25,"iNaturalist research-grade observations",2992807584,NA,"host",330
+3500,37.297469,-82.58365,NA,"Brassicaceae","Cardamine diphylla",2020,11,27,"iNaturalist research-grade observations",3415817516,NA,"host",332
+3501,35.105675,-85.900953,NA,"Brassicaceae","Cardamine diphylla",2020,11,28,"iNaturalist research-grade observations",3044574803,NA,"host",333
+3502,35.45942,-83.116547,NA,"Brassicaceae","Cardamine diphylla",2020,11,22,"iNaturalist research-grade observations",3044762782,NA,"host",327
+3503,40.161064,-79.27153,NA,"Brassicaceae","Cardamine diphylla",2020,12,10,"iNaturalist research-grade observations",3415384501,NA,"host",345
+3508,35.435827,-83.0558,NA,"Brassicaceae","Cardamine diphylla",2020,12,20,"iNaturalist research-grade observations",3337858462,NA,"host",355
 3509,36.207975,-83.413605,NA,"Brassicaceae","Cardamine diphylla",2019,1,6,"iNaturalist research-grade observations",1990468036,NA,"host",6
 3510,36.203984,-82.655972,NA,"Brassicaceae","Cardamine diphylla",2019,1,11,"iNaturalist research-grade observations",1990477006,NA,"host",11
 3517,35.674775,-83.487153,NA,"Brassicaceae","Cardamine diphylla",2019,3,2,"iNaturalist research-grade observations",3743181317,NA,"host",61
@@ -8109,7 +8185,19 @@
 4087,46.52613,-83.066213,NA,"Brassicaceae","Cardamine diphylla",2019,6,3,"iNaturalist research-grade observations",2283112068,NA,"host",154
 4088,46.606792,-82.900413,NA,"Brassicaceae","Cardamine diphylla",2019,6,3,"iNaturalist research-grade observations",2283114074,NA,"host",154
 4089,44.693468,-72.380937,NA,"Brassicaceae","Cardamine diphylla",2019,6,8,"iNaturalist research-grade observations",3044790400,NA,"host",159
+4091,42.621988,-78.781037,NA,"Brassicaceae","Cardamine diphylla",2019,6,29,"iNaturalist research-grade observations",3090762560,NA,"host",180
 4092,43.814938,-72.395464,NA,"Brassicaceae","Cardamine diphylla",2019,6,6,"iNaturalist research-grade observations",2557728528,NA,"host",157
+4094,43.534053,-80.204895,NA,"Brassicaceae","Cardamine diphylla",2019,7,5,"iNaturalist research-grade observations",2429215642,NA,"host",186
+4095,43.609811,-79.766796,NA,"Brassicaceae","Cardamine diphylla",2019,7,19,"iNaturalist research-grade observations",2429219925,NA,"host",200
+4096,42.668065,-72.73544,NA,"Brassicaceae","Cardamine diphylla",2019,7,8,"iNaturalist research-grade observations",2294634603,NA,"host",189
+4097,44.469596,-78.282874,NA,"Brassicaceae","Cardamine diphylla",2019,7,26,"iNaturalist research-grade observations",2311322004,NA,"host",207
+4098,41.454709,-79.078165,NA,"Brassicaceae","Cardamine diphylla",2019,8,31,"iNaturalist research-grade observations",3061630348,NA,"host",243
+4099,45.242056,-78.89719,NA,"Brassicaceae","Cardamine diphylla",2019,8,31,"iNaturalist research-grade observations",2422891758,NA,"host",243
+4102,35.518494,-83.333015,NA,"Brassicaceae","Cardamine diphylla",2019,11,16,"iNaturalist research-grade observations",2813925406,NA,"host",320
+4103,35.354642,-83.934272,NA,"Brassicaceae","Cardamine diphylla",2019,11,30,"iNaturalist research-grade observations",2573806356,NA,"host",334
+4105,35.629166,-83.089165,NA,"Brassicaceae","Cardamine diphylla",2019,12,16,"iNaturalist research-grade observations",3044735428,NA,"host",350
+4106,34.709641,-85.377739,NA,"Brassicaceae","Cardamine diphylla",2019,12,27,"iNaturalist research-grade observations",3044788453,NA,"host",361
+4107,36.651166,-82.115729,NA,"Brassicaceae","Cardamine diphylla",2019,12,28,"iNaturalist research-grade observations",3044830446,NA,"host",362
 4113,35.593658,-83.363512,NA,"Brassicaceae","Cardamine diphylla",2018,3,28,"iNaturalist research-grade observations",2802618347,NA,"host",87
 4114,35.649177,-83.716107,NA,"Brassicaceae","Cardamine diphylla",2018,3,29,"iNaturalist research-grade observations",3044584321,NA,"host",88
 4115,35.63964,-83.688432,NA,"Brassicaceae","Cardamine diphylla",2018,3,26,"iNaturalist research-grade observations",3044599327,NA,"host",85
@@ -8322,9 +8410,14 @@
 4381,44.323212,-79.320307,NA,"Brassicaceae","Cardamine diphylla",2018,6,19,"iNaturalist research-grade observations",1880520704,NA,"host",170
 4382,43.404341,-80.440824,NA,"Brassicaceae","Cardamine diphylla",2018,6,19,"iNaturalist research-grade observations",1880534820,NA,"host",170
 4383,43.405751,-80.438849,NA,"Brassicaceae","Cardamine diphylla",2018,6,21,"iNaturalist research-grade observations",1880537161,NA,"host",172
+4384,44.07516,-78.504348,NA,"Brassicaceae","Cardamine diphylla",2018,6,23,"iNaturalist research-grade observations",1883465142,NA,"host",174
 4387,44.507243,-76.584175,NA,"Brassicaceae","Cardamine diphylla",2018,6,16,"iNaturalist research-grade observations",1880580436,NA,"host",167
 4388,46.954918,-84.514748,NA,"Brassicaceae","Cardamine diphylla",2018,6,8,"iNaturalist research-grade observations",2576344777,NA,"host",159
 4390,34.77006,-84.58898,NA,"Brassicaceae","Cardamine diphylla",2018,6,7,NA,2597488683,NA,"host",158
+4391,44.299607,-78.268808,NA,"Brassicaceae","Cardamine diphylla",2018,7,1,"iNaturalist research-grade observations",1880619620,NA,"host",182
+4395,47.249126,-84.607482,NA,"Brassicaceae","Cardamine diphylla",2018,8,11,"iNaturalist research-grade observations",1990449893,NA,"host",223
+4398,41.152479,-81.409554,NA,"Brassicaceae","Cardamine diphylla",2018,11,25,"iNaturalist research-grade observations",1949986110,NA,"host",329
+4399,42.747514,-81.018267,NA,"Brassicaceae","Cardamine diphylla",2018,12,22,"iNaturalist research-grade observations",3090520470,NA,"host",356
 4400,35.117665,-84.573883,NA,"Brassicaceae","Cardamine diphylla",2017,1,27,"iNaturalist research-grade observations",1453384263,NA,"host",27
 4401,35.021287,-85.582821,NA,"Brassicaceae","Cardamine diphylla",2017,2,8,"iNaturalist research-grade observations",3961008302,NA,"host",39
 4403,40.057177,-79.301397,NA,"Brassicaceae","Cardamine diphylla",2017,3,24,"iNaturalist research-grade observations",1457641636,NA,"host",83
@@ -8475,6 +8568,11 @@
 4578,44.422142,-72.4611,NA,"Brassicaceae","Cardamine diphylla",2017,6,12,"iNaturalist research-grade observations",1571129861,NA,"host",163
 4579,43.086222,-81.086569,NA,"Brassicaceae","Cardamine diphylla",2017,6,3,"iNaturalist research-grade observations",1572384522,NA,"host",154
 4580,44.972806,-78.2747,NA,"Brassicaceae","Cardamine diphylla",2017,6,8,"iNaturalist research-grade observations",3070433468,NA,"host",159
+4582,41.216838,-73.562356,NA,"Brassicaceae","Cardamine diphylla",2017,6,30,"iNaturalist research-grade observations",1913206068,NA,"host",181
+4583,44.340344,-78.248572,NA,"Brassicaceae","Cardamine diphylla",2017,7,1,"iNaturalist research-grade observations",1572349136,NA,"host",182
+4585,44.836859,-76.500507,NA,"Brassicaceae","Cardamine diphylla",2017,10,19,"iNaturalist research-grade observations",1677323973,NA,"host",292
+4586,36.626817,-84.390167,NA,"Brassicaceae","Cardamine diphylla",2017,11,11,"iNaturalist research-grade observations",3044766313,NA,"host",315
+4587,34.780688,-84.32933,NA,"Brassicaceae","Cardamine diphylla",2017,12,3,"iNaturalist research-grade observations",3044881325,NA,"host",337
 4588,34.998955,-85.178554,NA,"Brassicaceae","Cardamine diphylla",2016,1,8,"iNaturalist research-grade observations",3925446315,NA,"host",8
 4591,41.71982,-81.173038,NA,"Brassicaceae","Cardamine diphylla",2016,3,19,"iNaturalist research-grade observations",1262383308,NA,"host",79
 4592,42.965358,-76.347299,NA,"Brassicaceae","Cardamine diphylla",2016,3,20,"iNaturalist research-grade observations",1563414794,NA,"host",80
@@ -8593,8 +8691,10 @@
 4718,44.159934,-72.594617,NA,"Brassicaceae","Cardamine diphylla",2016,6,9,"iNaturalist research-grade observations",1272100660,NA,"host",161
 4719,46.5305,-83.0651,NA,"Brassicaceae","Cardamine diphylla",2016,6,10,"iNaturalist research-grade observations",2445130614,NA,"host",162
 4720,44.28609,-72.439511,NA,"Brassicaceae","Cardamine diphylla",2016,6,21,"iNaturalist research-grade observations",1273854948,NA,"host",173
+4721,45.122012,-85.63691,NA,"Brassicaceae","Cardamine diphylla",2016,6,29,"iNaturalist research-grade observations",1831115737,NA,"host",181
 4722,35.03015,-83.45087,NA,"Brassicaceae","Cardamine diphylla",2016,6,14,NA,1899881291,NA,"host",166
 4723,35.06487,-83.46432,NA,"Brassicaceae","Cardamine diphylla",2016,6,19,NA,1899882266,NA,"host",171
+4724,35.593093,-83.3634,NA,"Brassicaceae","Cardamine diphylla",2016,11,18,"iNaturalist research-grade observations",1453227281,NA,"host",323
 4725,35.701987,-83.795019,NA,"Brassicaceae","Cardamine diphylla",2015,3,1,"iNaturalist research-grade observations",1088908984,NA,"host",60
 4726,35.709733,-83.780284,NA,"Brassicaceae","Cardamine diphylla",2015,3,22,"iNaturalist research-grade observations",1088925520,NA,"host",81
 4727,35.132882,-85.906669,NA,"Brassicaceae","Cardamine diphylla",2015,3,27,"iNaturalist research-grade observations",1088930845,NA,"host",86
@@ -8640,6 +8740,10 @@
 4772,42.472992,-72.928546,NA,"Brassicaceae","Cardamine diphylla",2015,6,7,"iNaturalist research-grade observations",1453057309,NA,"host",158
 4774,44.906535,-85.929662,NA,"Brassicaceae","Cardamine diphylla",2015,6,10,"iNaturalist research-grade observations",1562870772,NA,"host",161
 4775,42.780009,-75.998569,NA,"Brassicaceae","Cardamine diphylla",2015,6,17,"iNaturalist research-grade observations",1562871029,NA,"host",168
+4776,43.880614,-72.371325,NA,"Brassicaceae","Cardamine diphylla",2015,6,24,"iNaturalist research-grade observations",1099961145,NA,"host",175
+4777,41.457937,-81.308043,NA,"Brassicaceae","Cardamine diphylla",2015,11,7,"iNaturalist research-grade observations",1211991663,NA,"host",311
+4778,42.684801,-81.22246,NA,"Brassicaceae","Cardamine diphylla",2015,11,20,"iNaturalist research-grade observations",1453417287,NA,"host",324
+4779,41.247304,-81.678559,NA,"Brassicaceae","Cardamine diphylla",2015,12,26,"iNaturalist research-grade observations",1227765109,NA,"host",360
 4780,35.710296,-83.780046,NA,"Brassicaceae","Cardamine diphylla",2014,4,11,"iNaturalist research-grade observations",1088896068,NA,"host",101
 4782,39.875725,-79.497116,NA,"Brassicaceae","Cardamine diphylla",2014,4,19,"iNaturalist research-grade observations",899973460,NA,"host",109
 4783,39.876217,-79.496727,NA,"Brassicaceae","Cardamine diphylla",2014,4,19,"iNaturalist research-grade observations",899973441,NA,"host",109
@@ -8703,6 +8807,7 @@
 4846,43.633571,-72.542296,NA,"Brassicaceae","Cardamine diphylla",2014,5,9,"iNaturalist research-grade observations",3090814302,NA,"host",129
 4847,43.632257,-72.535515,NA,"Brassicaceae","Cardamine diphylla",2014,5,21,"iNaturalist research-grade observations",1265604247,NA,"host",141
 4848,44.468272,-77.315683,NA,"Brassicaceae","Cardamine diphylla",2014,5,12,"iNaturalist research-grade observations",1806366150,NA,"host",132
+4849,39.961099,-79.955213,NA,"Brassicaceae","Cardamine diphylla",2014,12,2,NA,3331193548,NA,"host",336
 4851,40.672172,-80.364153,NA,"Brassicaceae","Cardamine diphylla",2013,4,4,"iNaturalist research-grade observations",1249275558,NA,"host",94
 4852,41.310177,-81.608987,NA,"Brassicaceae","Cardamine diphylla",2013,4,20,"iNaturalist research-grade observations",891142655,NA,"host",110
 4853,41.12,-81.521333,NA,"Brassicaceae","Cardamine diphylla",2013,4,21,"iNaturalist research-grade observations",891143319,NA,"host",111
@@ -8782,6 +8887,7 @@
 4958,41.834022,-80.230124,NA,"Brassicaceae","Cardamine diphylla",2009,5,2,"iNaturalist research-grade observations",891064665,NA,"host",122
 4960,41.426629,-81.934705,NA,"Brassicaceae","Cardamine diphylla",2009,5,7,"iNaturalist research-grade observations",3079906629,NA,"host",127
 4961,41.754,-74.153,2,"Brassicaceae","Cardamine diphylla",2009,5,1,NA,3408334382,NA,"host",121
+4964,43.047227,-72.667843,NA,"Brassicaceae","Cardamine diphylla",2009,7,11,"iNaturalist research-grade observations",2269224356,NA,"host",192
 4965,40.662716,-79.244232,NA,"Brassicaceae","Cardamine diphylla",2008,4,29,NA,2859394186,NA,"host",120
 4967,37.269944,-82.297583,NA,"Brassicaceae","Cardamine diphylla",2008,4,20,NA,1978074695,NA,"host",111
 4968,41.754,-74.153,2,"Brassicaceae","Cardamine diphylla",2008,4,17,NA,3408365023,NA,"host",108
@@ -8829,6 +8935,7 @@
 5027,41.733333,-79.834444,NA,"Brassicaceae","Cardamine diphylla",2004,5,3,NA,2859105393,NA,"host",124
 5031,45.115389,-72.595417,NA,"Brassicaceae","Cardamine diphylla",2004,5,16,"Marie-Victorin Herbarium (MT)",473450256,NA,"host",137
 5033,41.754,-74.153,5,"Brassicaceae","Cardamine diphylla",2004,5,6,NA,3408430845,NA,"host",127
+5034,34.9929,-82.7955,NA,"Brassicaceae","Cardamine diphylla",2004,6,24,NA,1849158278,NA,"host",176
 5035,39.92889,-79.93694,NA,"Brassicaceae","Cardamine diphylla",2003,4,19,NA,2859401335,NA,"host",109
 5036,39.833056,-80.439167,NA,"Brassicaceae","Cardamine diphylla",2003,4,24,NA,2859367328,NA,"host",114
 5037,39.919395,-80.074313,NA,"Brassicaceae","Cardamine diphylla",2003,4,25,NA,2859402417,NA,"host",115
@@ -8837,6 +8944,7 @@
 5041,41.754,-74.153,1,"Brassicaceae","Cardamine diphylla",2003,4,25,NA,3408323555,NA,"host",115
 5042,41.754,-74.153,2,"Brassicaceae","Cardamine diphylla",2003,4,29,NA,3408358545,NA,"host",119
 5043,41.754,-74.153,2,"Brassicaceae","Cardamine diphylla",2003,5,8,NA,3408355559,NA,"host",128
+5044,40.652412,-78.381317,NA,"Brassicaceae","Cardamine diphylla",2003,6,24,NA,2859504349,NA,"host",175
 5046,35.5243,-83.9788,NA,"Brassicaceae","Cardamine diphylla",2002,4,30,NA,3813159301,NA,"host",120
 5047,35.53179,-83.99112,NA,"Brassicaceae","Cardamine diphylla",2002,4,30,NA,3813165301,NA,"host",120
 5048,41.754,-74.153,1,"Brassicaceae","Cardamine diphylla",2002,4,18,NA,3408324343,NA,"host",108
@@ -8852,6 +8960,9 @@
 5063,35.633056,-83.215833,NA,"Brassicaceae","Cardamine diphylla",2000,5,3,NA,3813154301,NA,"host",124
 5064,41.55,-73.55,NA,"Brassicaceae","Cardamine diphylla",2000,5,1,"Vascular plants",1928371792,NA,"host",122
 5065,41.754,-74.153,1,"Brassicaceae","Cardamine diphylla",2000,5,5,NA,3408416904,NA,"host",126
+4,41.413361,-72.697625,NA,"Brassicaceae","Borodinia laevigata",2023,2,15,"iNaturalist research-grade observations",4039359583,NA,"host",46
+8,35.809987,-85.634252,NA,"Brassicaceae","Borodinia laevigata",2023,2,23,"iNaturalist research-grade observations",4046459969,NA,"host",54
+25,36.205778,-83.42579,NA,"Brassicaceae","Borodinia laevigata",2023,3,13,"iNaturalist research-grade observations",4062623319,NA,"host",72
 30,39.65848,-78.36387,NA,"Brassicaceae","Borodinia laevigata",2022,2,20,"iNaturalist research-grade observations",3698133805,NA,"host",51
 35,35.072253,-83.446096,NA,"Brassicaceae","Borodinia laevigata",2022,2,24,"iNaturalist research-grade observations",3705781552,NA,"host",55
 38,34.855937,-85.481937,NA,"Brassicaceae","Borodinia laevigata",2022,2,28,"iNaturalist research-grade observations",3705535820,NA,"host",59
@@ -8933,6 +9044,9 @@
 385,42.400599,-76.57889,NA,"Brassicaceae","Borodinia laevigata",2022,6,4,"iNaturalist research-grade observations",3858632248,NA,"host",155
 386,38.906192,-78.405708,NA,"Brassicaceae","Borodinia laevigata",2022,6,18,"iNaturalist research-grade observations",3859680407,NA,"host",169
 387,42.655752,-74.017309,NA,"Brassicaceae","Borodinia laevigata",2022,6,19,"iNaturalist research-grade observations",3873038706,NA,"host",170
+392,42.665996,-80.588253,NA,"Brassicaceae","Borodinia laevigata",2022,7,28,"iNaturalist research-grade observations",3881499223,NA,"host",209
+393,43.956068,-77.036912,NA,"Brassicaceae","Borodinia laevigata",2022,8,2,"iNaturalist research-grade observations",3947487721,NA,"host",214
+394,41.053178,-80.1568,NA,"Brassicaceae","Borodinia laevigata",2022,9,15,"iNaturalist research-grade observations",4028710047,NA,"host",258
 411,36.100181,-81.801262,NA,"Brassicaceae","Borodinia laevigata",2021,3,13,"iNaturalist research-grade observations",3408115430,NA,"host",72
 419,35.340951,-82.771305,NA,"Brassicaceae","Borodinia laevigata",2021,3,19,"iNaturalist research-grade observations",3067882491,NA,"host",78
 426,35.60273,-82.412033,NA,"Brassicaceae","Borodinia laevigata",2021,3,23,"iNaturalist research-grade observations",3067881232,NA,"host",82
@@ -8978,6 +9092,13 @@
 649,42.323929,-73.343011,NA,"Brassicaceae","Borodinia laevigata",2021,6,6,"iNaturalist research-grade observations",3302549518,NA,"host",157
 652,44.354553,-76.070175,NA,"Brassicaceae","Borodinia laevigata",2021,6,11,"iNaturalist research-grade observations",3747297431,NA,"host",162
 654,44.559657,-76.515782,NA,"Brassicaceae","Borodinia laevigata",2021,6,19,"iNaturalist research-grade observations",3986054416,NA,"host",170
+658,35.936803,-82.326988,NA,"Brassicaceae","Borodinia laevigata",2021,6,27,"iNaturalist research-grade observations",3321239554,NA,"host",178
+660,42.823424,-76.302561,NA,"Brassicaceae","Borodinia laevigata",2021,7,4,"iNaturalist research-grade observations",3759203637,NA,"host",185
+664,38.556933,-78.352775,NA,"Brassicaceae","Borodinia laevigata",2021,7,21,"iNaturalist research-grade observations",3759883622,NA,"host",202
+667,41.170975,-81.565297,NA,"Brassicaceae","Borodinia laevigata",2021,8,11,"iNaturalist research-grade observations",3337597726,NA,"host",223
+668,41.171198,-81.565337,NA,"Brassicaceae","Borodinia laevigata",2021,8,11,"iNaturalist research-grade observations",3337729326,NA,"host",223
+672,36.143064,-81.715857,NA,"Brassicaceae","Borodinia laevigata",2021,10,16,"iNaturalist research-grade observations",3759183786,NA,"host",289
+673,41.147501,-73.810658,NA,"Brassicaceae","Borodinia laevigata",2021,12,2,"iNaturalist research-grade observations",3759855772,NA,"host",336
 678,36.225994,-81.787063,NA,"Brassicaceae","Borodinia laevigata",2020,2,27,"iNaturalist research-grade observations",3698277315,NA,"host",58
 705,35.925649,-82.866917,NA,"Brassicaceae","Borodinia laevigata",2020,3,25,"iNaturalist research-grade observations",2626247641,NA,"host",85
 712,35.936375,-82.327233,NA,"Brassicaceae","Borodinia laevigata",2020,3,28,"iNaturalist research-grade observations",2596292560,NA,"host",88
@@ -9034,6 +9155,10 @@
 874,42.776969,-80.295151,NA,"Brassicaceae","Borodinia laevigata",2020,5,20,"iNaturalist research-grade observations",3032021444,NA,"host",141
 875,43.12522,-79.05803,NA,"Brassicaceae","Borodinia laevigata",2020,5,30,"iNaturalist research-grade observations",3061671101,NA,"host",151
 880,39.306141,-80.349616,NA,"Brassicaceae","Borodinia laevigata",2020,6,16,"iNaturalist research-grade observations",2803129797,NA,"host",168
+881,36.295586,-81.537879,NA,"Brassicaceae","Borodinia laevigata",2020,7,31,"iNaturalist research-grade observations",2980796419,NA,"host",213
+883,39.882892,-80.444742,NA,"Brassicaceae","Borodinia laevigata",2020,8,3,NA,3064119383,NA,"host",216
+886,35.423144,-83.190239,NA,"Brassicaceae","Borodinia laevigata",2020,10,11,"iNaturalist research-grade observations",2898269869,NA,"host",285
+887,35.113789,-85.178428,NA,"Brassicaceae","Borodinia laevigata",2020,10,15,"iNaturalist research-grade observations",2898501278,NA,"host",289
 903,35.662567,-83.710709,NA,"Brassicaceae","Borodinia laevigata",2019,3,15,"iNaturalist research-grade observations",2234737606,NA,"host",74
 913,34.828333,-85.489095,NA,"Brassicaceae","Borodinia laevigata",2019,3,24,"iNaturalist research-grade observations",2813931359,NA,"host",83
 918,35.433326,-82.196755,NA,"Brassicaceae","Borodinia laevigata",2019,3,29,"iNaturalist research-grade observations",2235489386,NA,"host",88
@@ -9071,6 +9196,7 @@
 1027,38.11271,-80.308913,NA,"Brassicaceae","Borodinia laevigata",2019,6,15,"iNaturalist research-grade observations",2283031393,NA,"host",166
 1028,43.905888,-77.270826,NA,"Brassicaceae","Borodinia laevigata",2019,6,16,"iNaturalist research-grade observations",2269280661,NA,"host",167
 1034,42.786987,-81.257273,NA,"Brassicaceae","Borodinia laevigata",2019,6,8,"iNaturalist research-grade observations",2883087360,NA,"host",159
+1044,36.077958,-82.099935,NA,"Brassicaceae","Borodinia laevigata",2019,11,27,"iNaturalist research-grade observations",4046677385,NA,"host",331
 1047,35.522299,-82.330164,NA,"Brassicaceae","Borodinia laevigata",2018,3,23,"iNaturalist research-grade observations",1933537171,NA,"host",82
 1049,35.605789,-82.839424,NA,"Brassicaceae","Borodinia laevigata",2018,3,31,"iNaturalist research-grade observations",2237412176,NA,"host",90
 1056,35.696316,-83.388603,NA,"Brassicaceae","Borodinia laevigata",2018,4,10,"iNaturalist research-grade observations",1838041186,NA,"host",100
@@ -9100,6 +9226,10 @@
 1124,41.75,-74.15,NA,"Brassicaceae","Borodinia laevigata",2018,5,4,NA,3855232026,"Flowering","host",124
 1126,35.435047,-83.19358,NA,"Brassicaceae","Borodinia laevigata",2018,6,2,"iNaturalist research-grade observations",1850908981,NA,"host",153
 1130,44.507237,-76.584525,NA,"Brassicaceae","Borodinia laevigata",2018,6,16,"iNaturalist research-grade observations",1880578005,NA,"host",167
+1134,41.339,-79.1859,NA,"Brassicaceae","Borodinia laevigata",2018,7,6,NA,2859481977,NA,"host",187
+1135,44.19231,-78.164,NA,"Brassicaceae","Borodinia laevigata",2018,8,2,"iNaturalist research-grade observations",1890093264,NA,"host",214
+1136,41.127672,-81.414673,NA,"Brassicaceae","Borodinia laevigata",2018,8,15,"iNaturalist research-grade observations",1945419057,NA,"host",227
+1137,41.951504,-80.670094,NA,"Brassicaceae","Borodinia laevigata",2018,9,8,"iNaturalist research-grade observations",1914214801,NA,"host",251
 1144,39.287417,-77.7365,NA,"Brassicaceae","Borodinia laevigata",2017,4,7,NA,3357402361,NA,"host",97
 1145,38.594724,-78.336716,NA,"Brassicaceae","Borodinia laevigata",2017,4,15,"iNaturalist research-grade observations",2294582944,NA,"host",105
 1150,34.909239,-85.242374,NA,"Brassicaceae","Borodinia laevigata",2017,4,10,"iNaturalist research-grade observations",3466112315,NA,"host",100
@@ -9110,6 +9240,7 @@
 1166,40.77617,-78.53654,NA,"Brassicaceae","Borodinia laevigata",2017,5,5,NA,3382659320,NA,"host",125
 1187,45.288995,-88.74259,NA,"Brassicaceae","Borodinia laevigata",2017,6,1,"iNaturalist research-grade observations",2005404491,NA,"host",152
 1189,42.682416,-81.224211,NA,"Brassicaceae","Borodinia laevigata",2017,6,4,"iNaturalist research-grade observations",1571090917,NA,"host",155
+1191,36.105544,-82.109336,NA,"Brassicaceae","Borodinia laevigata",2017,7,31,"iNaturalist research-grade observations",1586125891,NA,"host",212
 1196,43.190785,-79.569426,NA,"Brassicaceae","Borodinia laevigata",2016,4,16,"iNaturalist research-grade observations",3456094313,NA,"host",107
 1197,36.951245,-83.179232,NA,"Brassicaceae","Borodinia laevigata",2016,4,11,"iNaturalist research-grade observations",1935591928,NA,"host",102
 1198,35.013233,-85.342125,NA,"Brassicaceae","Borodinia laevigata",2016,4,2,NA,3470664104,NA,"host",93
@@ -9165,19 +9296,25 @@
 1326,39.99234,-80.43869,NA,"Brassicaceae","Borodinia laevigata",2005,4,29,NA,2859104427,NA,"host",119
 1329,41.75,-74.15,NA,"Brassicaceae","Borodinia laevigata",2005,4,25,NA,3855232047,"Flowering","host",115
 1330,40.20549,-80.00698,NA,"Brassicaceae","Borodinia laevigata",2005,5,29,NA,2859107411,NA,"host",149
+1333,35.156154,-82.285906,NA,"Brassicaceae","Borodinia laevigata",2005,6,22,NA,1849162424,NA,"host",173
 1334,35.1526,-82.2705,NA,"Brassicaceae","Borodinia laevigata",2005,6,9,NA,1849177193,NA,"host",160
+1335,40.17224,-80.4332,NA,"Brassicaceae","Borodinia laevigata",2005,7,15,NA,2859364384,NA,"host",196
 1340,42.01528,-80.38556,NA,"Brassicaceae","Borodinia laevigata",2004,5,15,NA,2859365356,NA,"host",136
 1343,39.756667,-80.054167,NA,"Brassicaceae","Borodinia laevigata",2004,6,1,NA,2859403373,NA,"host",153
+1344,39.955278,-80.044722,NA,"Brassicaceae","Borodinia laevigata",2004,7,22,NA,2859365361,NA,"host",204
 1345,39.92889,-79.93694,NA,"Brassicaceae","Borodinia laevigata",2003,4,19,NA,2859399320,NA,"host",109
 1348,39.909444,-80.495278,NA,"Brassicaceae","Borodinia laevigata",2003,5,2,NA,2859119363,NA,"host",122
 1349,39.86472,-80.41306,NA,"Brassicaceae","Borodinia laevigata",2003,5,21,NA,2859106357,NA,"host",141
 1350,41.37667,-78.97333,NA,"Brassicaceae","Borodinia laevigata",2003,5,9,NA,2859403348,NA,"host",129
 1351,41.75,-74.15,NA,"Brassicaceae","Borodinia laevigata",2003,5,8,NA,3855231995,"Flowering","host",128
 1352,39.74889,-80.05389,NA,"Brassicaceae","Borodinia laevigata",2003,6,16,NA,2859365342,NA,"host",167
+1353,39.890833,-80.475833,NA,"Brassicaceae","Borodinia laevigata",2003,7,2,NA,2859123360,NA,"host",183
+1354,41.264705,-72.73493,1,"Brassicaceae","Borodinia laevigata",2003,11,18,NA,1039005709,NA,"host",322
 1355,41.75,-74.15,NA,"Brassicaceae","Borodinia laevigata",2002,4,18,NA,3855231992,"Flowering","host",108
 1356,39.923588,-80.487276,NA,"Brassicaceae","Borodinia laevigata",2002,5,23,NA,2859105358,NA,"host",143
 1359,41.264705,-72.73493,1,"Brassicaceae","Borodinia laevigata",2002,5,8,NA,1038931451,NA,"host",128
 1360,40.932728,-78.538398,NA,"Brassicaceae","Borodinia laevigata",2002,6,7,NA,2859097204,NA,"host",158
+1361,41.128199,-78.702882,NA,"Brassicaceae","Borodinia laevigata",2002,6,25,NA,2859114210,NA,"host",176
 1362,39.930225,-80.500561,NA,"Brassicaceae","Borodinia laevigata",2002,6,7,NA,2859119352,NA,"host",158
 1363,36.275,-81.8375,1,"Brassicaceae","Borodinia laevigata",2001,4,21,"Tropicos",1258789875,NA,"host",111
 1364,41.3997,-73.5425,NA,"Brassicaceae","Borodinia laevigata",2001,5,3,"Vascular plants",1928280814,NA,"host",123
@@ -9200,6 +9337,7 @@
 16,41.754,-74.153,1,"Brassicaceae","Borodinia laevigata",2009,4,22,NA,3408438373,NA,"host",112
 17,41.754,-74.153,1,"Brassicaceae","Borodinia laevigata",2009,4,30,NA,3408396345,NA,"host",120
 18,41.349366,-73.426958,NA,"Brassicaceae","Borodinia laevigata",2009,5,21,NA,1932899156,NA,"host",141
+19,40.515714,-79.415426,NA,"Brassicaceae","Borodinia laevigata",2009,7,6,NA,2859364424,NA,"host",187
 20,40.387588,-79.115874,NA,"Brassicaceae","Borodinia laevigata",2008,4,30,NA,2859111207,NA,"host",121
 21,41.754,-74.153,1,"Brassicaceae","Borodinia laevigata",2008,4,24,NA,3408330071,NA,"host",115
 22,41.754,-74.153,1,"Brassicaceae","Borodinia laevigata",2008,5,8,NA,3408393051,NA,"host",129
@@ -9209,12 +9347,14 @@
 27,41.754,-74.153,1,"Brassicaceae","Borodinia laevigata",2007,5,10,NA,3408399728,NA,"host",130
 29,41.754,-74.153,1,"Brassicaceae","Borodinia laevigata",2006,4,20,NA,3408357324,NA,"host",110
 30,41.754,-74.153,1,"Brassicaceae","Borodinia laevigata",2006,5,2,NA,3408359338,NA,"host",122
+32,41.754,-74.153,2,"Brassicaceae","Borodinia laevigata",2006,7,7,NA,3408434542,NA,"host",188
 33,41.754,-74.153,1,"Brassicaceae","Borodinia laevigata",2005,4,25,NA,3408359011,NA,"host",115
 34,41.754,-74.153,5,"Brassicaceae","Borodinia laevigata",2005,4,26,NA,3408324038,NA,"host",116
 35,41.754,-74.153,2,"Brassicaceae","Borodinia laevigata",2005,4,29,NA,3408325053,NA,"host",119
 36,41.754,-74.153,1,"Brassicaceae","Borodinia laevigata",2005,5,14,NA,3408388046,NA,"host",134
 37,36.11175,-83.766571,NA,"Brassicaceae","Borodinia laevigata",2004,3,28,NA,1989999720,NA,"host",88
 39,41.754,-74.153,2,"Brassicaceae","Borodinia laevigata",2004,5,6,NA,3408398823,NA,"host",127
+40,41.754,-74.153,2,"Brassicaceae","Borodinia laevigata",2004,10,21,NA,3408324934,NA,"host",295
 45,41.754,-74.153,1,"Brassicaceae","Borodinia laevigata",2003,5,8,NA,3408432600,NA,"host",128
 49,41.754,-74.153,1,"Brassicaceae","Borodinia laevigata",2002,4,18,NA,3408398345,NA,"host",108
 50,41.754,-74.153,1,"Brassicaceae","Borodinia laevigata",2001,4,27,NA,3408355075,NA,"host",117
