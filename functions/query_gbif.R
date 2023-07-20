@@ -8,6 +8,8 @@
 #' decimal latitude of search query
 #' @param cols columns to retain; if \code{NULL}, returns all columns that are 
 #' returned from a call to \code{rgbif::occ_search}
+#' @param max_attempts integer maximum number of attempts for each query, 
+#' maximum is 10 attempts
 #' 
 #' @details This function is modified from the function of the same name at 
 #' https://github.com/Big-Biodiversity-Collaborative/BotanicGardenHotspot
@@ -18,12 +20,17 @@ query_gbif <- function(taxon_keys, verbose = FALSE,
                        cols = c("decimalLatitude", "decimalLongitude",
                                 "individualCount", "family", "species", "year", 
                                 "month", "day", "datasetName", "gbifID", 
-                                "lifeStage")) {
+                                "lifeStage"),
+                       max_attempts = 5) {
   if (!require(rgbif)) {
     stop("GBIF queries require the rgbif library")
   }
   if (!require(dplyr)) {
     stop("GBIF queries require the dplyr library")
+  }
+  
+  if (!(max_attempts %in% 1:10)) {
+    max_attempts <- 5
   }
   
   # Count number of observations in the rectangle, as pagination might be 
@@ -52,24 +59,48 @@ query_gbif <- function(taxon_keys, verbose = FALSE,
                          min((start+300), taxon_count), " of ", 
                          taxon_count, " for taxon key ", taxon_key))
         }
-        gbif_obs <- rgbif::occ_search(taxonKey = taxon_key,
-                                      decimalLongitude = paste(lon_limits[1:2],
-                                                               collapse = ","),
-                                      decimalLatitude = paste(lat_limits[1:2],
-                                                              collapse = ","),
-                                      hasGeospatialIssue = FALSE,
-                                      start = start,
-                                      limit = 300)
-        if (page == 1) {
-          gbif_obs_list[[as.character(taxon_key)]] <- gbif_obs$data
-        } else {
-          gbif_obs_list[[as.character(taxon_key)]] <- dplyr::bind_rows(gbif_obs_list[[as.character(taxon_key)]],
-                                                                       gbif_obs$data)
+        # A little sleep every other page
+        if (page %% 2 == 0) {
+          Sys.sleep(runif(n = 1))
         }
-        page <- page + 1
-        start <- (page - 1) * 300
-      }
-    } else {
+        
+        num_attempts <- 0
+        success <- FALSE
+        while (num_attempts < max_attempts & !success) {
+          tryCatch(expr = {
+            num_attempts <- num_attempts + 1
+            # If last attempt failed, sleep briefly
+            if (num_attempts > 1) {
+              Sys.sleep(runif(n = 1, min = 1, max = 2))
+            }
+
+            gbif_obs <- rgbif::occ_search(taxonKey = taxon_key,
+                                          decimalLongitude = paste(lon_limits[1:2],
+                                                                   collapse = ","),
+                                          decimalLatitude = paste(lat_limits[1:2],
+                                                                  collapse = ","),
+                                          hasGeospatialIssue = FALSE,
+                                          start = start,
+                                          limit = 300)
+            if (page == 1) {
+              gbif_obs_list[[as.character(taxon_key)]] <- gbif_obs$data
+            } else {
+              gbif_obs_list[[as.character(taxon_key)]] <- dplyr::bind_rows(gbif_obs_list[[as.character(taxon_key)]],
+                                                                           gbif_obs$data)
+            }
+            page <- page + 1
+            start <- (page - 1) * 300
+            success <- TRUE # End of successful query & update
+          }, 
+          error = function(e) {
+            message("...unsuccessful query on attempt ", num_attempts, " of ", 
+                    max_attempts)
+            e
+          },
+          finally = NULL) # end of tryCatch
+        } # end while of attempts & success
+      } # end pagination while (start <= taxon_count)
+    } else { # length(taxon_count) is zero
       gbif_obs_list[[as.character(taxon_key)]] <- NULL
     }
   }
