@@ -3,10 +3,10 @@
 # jcoliver@arizona.edu
 # 2023-03-06
 
-require(terra)   # To use growing degree day raster for base map
-require(ggplot2)
-require(dplyr)
-require(ggpubr)  # For making a multi-panel plot
+library(terra)   # To use growing degree day raster for base map
+library(ggplot2)
+library(dplyr)
+library(ggpubr)  # For making a multi-panel plot
 
 # Load in observation data (TODO: clean or filtered?)
 insect <- read.csv(file = "data/pieris_virginiensis-gbif-clean.csv")

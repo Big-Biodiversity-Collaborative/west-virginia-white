@@ -50,6 +50,10 @@ all_obs <- all_obs %>%
   filter(!is.na(tmin) & !is.na(tmax)) %>%
   mutate(tmid = (tmin + tmax)/2) # mean didn't work?!?
 
+# Late summer and fall observations are not relevant
+all_obs <- all_obs %>%
+  filter(month <= 7)
+
 ################################################################################
 # Analyses
 # Run linear regression, no interaction
@@ -83,7 +87,7 @@ anova(model_3, model_4)
 model_5 <- lm(julian_day ~ year * tmid * species,
                  data = all_obs)
 summary(model_5)
-anova(model_4, model_5) # NS
+anova(model_4, model_5)
 
 # Collate model comparison results
 # Table should have:
@@ -121,13 +125,13 @@ write.csv(x = model_compare,
           file = "output/model-compare-tmid.csv",
           row.names = FALSE)
 
-# Model 4 is best fit; test for heteroskedasticity
-best_model <- model_4
+# Model 5 test for heteroskedasticity
+best_model <- model_5
 
 lmtest::bptest(best_model)
 # studentized Breusch-Pagan test
 # data:  best_model
-# BP = 323.42, df = 9, p-value < 2.2e-16
+# BP = 325.7, df = 11, p-value < 2.2e-16
 
 # Update the model with residuals-based weights (WLS) (observations with lower 
 # deviation from predicted values in OLS are given more weight)
@@ -143,7 +147,7 @@ lmtest::bptest(best_model_wls)
 # studentized Breusch-Pagan test
 # 
 # data:  best_model_wls
-# BP = 11.709, df = 9, p-value = 0.2302
+# BP = 12.632, df = 11, p-value = 0.318
 
 ################################################################################
 # Effect summary
@@ -175,12 +179,13 @@ write.csv(file = "output/model-table-tmid.csv",
 # Best model is
 # Julian Day = B0 + B1 x year + B2 x tmid + B3 x species +
 #                   B4 x year x tmid + B5 x year x species + B6 x tmid x species
+#                   B7 x year x tmid x species
 # For insect (assumes insect is reference level for species), change in the 
 # number of days / year is
 # B1 + tmid x B4
 # For hosts, change in number of days / year is
-# B1 + tmid x B4 + B5
-# where B5 has specific values for each host
+# B1 + B5 + tmid x (B4 + B7)
+# where B5 and B7 have specific values for each host
 
 # Need to have values to substitute in for tmid
 # Prior figures use 33% and 66% as cutoffs. Here we will use 33%/2, 50%, and 
@@ -201,7 +206,8 @@ host_deltas <- sapply(X = host_names,
                         B1 <- model_results$estimate[model_results$term == "year"]
                         B4 <- model_results$estimate[model_results$term == "year:tmid"]
                         B5 <- model_results$estimate[model_results$term == paste0("year:species", x)]
-                        delta <- B1 + (tmid_points * B4) + B5
+                        B7 <- model_results$estimate[model_results$term == paste0("year:tmid:species", x)]
+                        delta <- B1 + B5 + (tmid_points * (B4 + B7))
                         return(delta)
                       })
 host_deltas <- t(host_deltas)
@@ -228,9 +234,9 @@ all_obs <- all_obs %>%
 
 table(all_obs$species, all_obs$tmid_bin)
 #                       Low_Temp Medium_Temp High_Temp
-# Pieris virginiensis        298         297       297
-# Cardamine diphylla        1086        1747       908
-# Cardamine concatenata      247        1538      2435
+# Pieris virginiensis        384         384       382
+# Cardamine diphylla        1518        1876      1086
+# Cardamine concatenata      433        2031      2583
 
 # Might still be useful to visualize?
 ggplot(data = all_obs, mapping = aes(x = longitude, 
@@ -250,12 +256,6 @@ write.csv(x = all_deltas,
 
 # We are especially interested in how the plants are responding relative to 
 # the insect, so compare all host_deltas to the insect_delta
-# Code is a lot more complicated than it needs to be with model_4 as best model
-# Because there is no year x tmid x species interaction, the only thing
-# the difference between insect and hosts response are the two values of B5 
-# (one value for each species of host); resultant compared_to_insect matrix 
-# will thus have identical values across a row (no differences among different 
-# temperature zones)
 compared_to_insect <- t(apply(X = host_deltas, 
                               MARGIN = 1, 
                               FUN = function(x) { 
@@ -329,8 +329,8 @@ low_tmid_prediction <- ggplot(data = newdata %>%
   theme_bw() +
   labs(title = "Low Temp", x = "Year", y = "Julian day")
 low_tmid_prediction
-# ggsave(filename = "output/figure-3a.png",
-#        plot = low_tmid_prediction)
+ggsave(filename = "output/figure-3a.png",
+       plot = low_tmid_prediction)
 
 # Medium temperature
 medium_tmid_prediction <- ggplot(data = newdata %>% 
@@ -347,8 +347,8 @@ medium_tmid_prediction <- ggplot(data = newdata %>%
   theme_bw() +
   labs(title = "Medium Temp", x = "Year", y = "Julian day")
 medium_tmid_prediction
-# ggsave(filename = "output/figure-3b.png",
-#        plot = medium_tmid_prediction)
+ggsave(filename = "output/figure-3b.png",
+       plot = medium_tmid_prediction)
 
 # High temperature
 high_tmid_prediction <- ggplot(data = newdata %>% 
@@ -365,8 +365,8 @@ high_tmid_prediction <- ggplot(data = newdata %>%
   theme_bw() +
   labs(title = "High Temp", x = "Year", y = "Julian day")
 high_tmid_prediction
-# ggsave(filename = "output/figure-3c.png",
-#        plot = high_tmid_prediction)
+ggsave(filename = "output/figure-3c.png",
+       plot = high_tmid_prediction)
 
 # Single, multi-panel figure
 multi_panel <- ggpubr::ggarrange(low_tmid_prediction,

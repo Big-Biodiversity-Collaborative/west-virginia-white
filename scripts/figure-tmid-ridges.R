@@ -3,10 +3,10 @@
 # jcoliver@arizona.edu
 # 2023-07-18
 
-require(dplyr)
-require(ggplot2)
-require(ggridges)  # Ridge plots
-require(tidyr)
+library(dplyr)
+library(ggplot2)
+library(ggridges)  # Ridge plots
+library(tidyr)
 
 # Read in filtered data
 all_obs <- read.csv(file = "data/filtered-obs.csv")

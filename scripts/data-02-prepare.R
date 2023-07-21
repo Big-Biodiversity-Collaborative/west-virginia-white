@@ -3,9 +3,9 @@
 # jcoliver@arizona.edu
 # 2023-03-06
 
-require(dplyr)
-require(lubridate) # Julian days
-require(ks)        # Estimating density envelope
+library(dplyr)
+library(lubridate) # Julian days
+library(ks)        # Estimating density envelope
 
 # Restricts observations to 
 #   + those occurring in specific time envelope (see min_year & max_year)
