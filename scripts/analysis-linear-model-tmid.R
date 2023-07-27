@@ -4,8 +4,6 @@
 # 2023-07-14
 
 # Only includes the two Cardamine hosts
-# TODO: With best model excluding the three-way interaction, the three plots 
-# differ only in intercept - is it necessary to have the three plots, still?
 
 library(dplyr)     # data wrangling
 library(lubridate) # Julian day calculations
@@ -48,7 +46,7 @@ all_obs <- all_obs %>%
 # tmax)
 all_obs <- all_obs %>%
   filter(!is.na(tmin) & !is.na(tmax)) %>%
-  mutate(tmid = (tmin + tmax)/2) # mean didn't work?!?
+  mutate(tmid = (tmin + tmax)/2) # For some reason, mean function doesn't work?
 
 # Late summer and fall observations are not relevant
 all_obs <- all_obs %>%
@@ -148,6 +146,7 @@ lmtest::bptest(best_model_wls)
 # 
 # data:  best_model_wls
 # BP = 12.632, df = 11, p-value = 0.318
+summary(best_model_wls)
 
 ################################################################################
 # Effect summary
@@ -274,9 +273,7 @@ write.csv(x = compared_to_insect,
 
 ################################################################################
 # Plot responses
-# Want three sub-plots, one for low temperature, medium temperature, high 
-# temperature
-
+################################################################################
 # Create an empty data frame to hold values we want to make predictions for
 empty_newdata <- data.frame(year = numeric(0),
                             species = character(0),
@@ -295,24 +292,51 @@ jd_predict <- predict(object = best_model_wls,
 newdata$julian_day <- jd_predict$fit
 newdata$jd_se <- jd_predict$se.fit
 
-# Plot predicted lines
-# Want to have same Julian day scale on each plot
-jd_limits <- c(min(newdata$julian_day - newdata$jd_se), 
-               max(newdata$julian_day + newdata$jd_se))
+# Add the tmid bin info to newdata
+newdata <- newdata %>%
+  mutate(tmid_bin = case_when(tmid == tmid_points[1] ~ "Low_Temp",
+                              tmid == tmid_points[2] ~ "Medium_Temp",
+                              tmid == tmid_points[3] ~ "High_Temp")) %>%
+  mutate(tmid_bin = factor(tmid_bin, levels = c("Low_Temp",
+                                                "Medium_Temp",
+                                                "High_Temp")))
 
-# line_colors <- c("Pieris virginiensis" = "#7b3294",
-#                  "Cardamine concatenata" = "#a6dba0",
-#                  "Cardamine diphylla" = "#008837",
-#                  "Borodinia laevigata" = "#5aae61")
+################################################################################
+# A faceted plot, with observation points and prediction lines from models
 
-# line_colors <- c("Pieris virginiensis" = "#BEBADA",
-#                  "Cardamine concatenata" = "#8DD3C7",
-#                  "Cardamine diphylla" = "#8DD37C",
-#                  "Borodinia laevigata" = "#FB8072")
+# We'll want human-readable labels for the temperature bins
+tmid_labels <- c(Low_Temp = "Low temperature", 
+                 Medium_Temp = "Medium temperature", 
+                 High_Temp = "High temperature")
 
+# Try plotting data points, adding lines, and faceting by species and tmid bin
+faceted_plot <- ggplot(mapping = aes(x = year, y = julian_day)) +
+  geom_point(data = all_obs, size = 0.5, alpha = 0.5) + # observations
+  geom_line(data = newdata) + # predicted lines
+  geom_line(data = newdata, linetype = 2, # Lower SE
+            mapping = aes(y = julian_day - jd_se)) +
+  geom_line(data = newdata, linetype = 2, # Upper SE
+            mapping = aes(y = julian_day + jd_se)) +
+  theme_bw() +
+  labs(x = "Year", y = "Julian day") +
+  facet_grid(tmid_bin ~ species, 
+             scales = "free_y", 
+             labeller = labeller(tmid_bin = tmid_labels)) +
+  theme(strip.text.x = element_text(face = "italic"))
+faceted_plot
+ggsave(filename = "output/figure-3.png",
+       plot = faceted_plot)
+
+################################################################################
+# Three separate plots (one for each temperature bin) with lines for each of 
+# three taxa all on a single plot
 line_colors <- c("Pieris virginiensis" = "#BEAED4",
                  "Cardamine concatenata" = "#FDC086",
                  "Cardamine diphylla" = "#7FC97F")
+
+# Want to have same Julian day scale on each plot
+jd_limits <- c(min(newdata$julian_day - newdata$jd_se), 
+               max(newdata$julian_day + newdata$jd_se))
 
 # Low temperature
 low_tmid_prediction <- ggplot(data = newdata %>% 
@@ -376,6 +400,7 @@ multi_panel <- ggpubr::ggarrange(low_tmid_prediction,
 multi_panel
 
 ################################################################################
+# Some EDA plotting
 # Boxplots of observations
 obs_box <- ggplot(data = all_obs, mapping = aes(x = as.factor(year), 
                                                 y = julian_day, 
@@ -424,3 +449,42 @@ diphylla_plot <- ggplot(data = all_obs %>% filter(species == "Cardamine diphylla
   scale_color_continuous(type = "viridis") +
   theme_bw()
 diphylla_plot
+
+################################################################################
+# Plot differential responses per year
+# X-Y plot with points for each year that are differences, for each year, in 
+# the median data of observations
+# Start with median calculations
+medians <- all_obs %>%
+  group_by(year, species, tmid_bin) %>%
+  summarize(median_jd = median(julian_day, na.rm = TRUE))
+
+# Pivot to wider format where each species has a column
+medians_wide <- medians %>%
+  pivot_wider(names_from = species, values_from = median_jd)
+
+# Drop any row missing year/tmid for P. virginiensis
+medians_wide <- medians_wide %>%
+  filter(!is.na(`Pieris virginiensis`))
+
+# Create the delta points
+deltas <- medians_wide %>%
+  mutate(C_diphylla = `Pieris virginiensis` - `Cardamine diphylla`,
+         C_concatenata = `Pieris virginiensis` - `Cardamine concatenata`) %>%
+  select(-c(`Pieris virginiensis`, `Cardamine diphylla`, `Cardamine concatenata`))
+
+# Pivot back to long for plot
+deltas_long <- deltas %>%
+  pivot_longer(cols = c(C_diphylla, C_concatenata),
+               names_to = "species",
+               values_to = "jd_delta") %>%
+  mutate(species = gsub(pattern = "C_", 
+                        replacement = "Cardamine ",
+                        x = species))
+
+# Plot median points
+ggplot(data = deltas_long, mapping = aes(x = year, y = jd_delta)) +
+  geom_smooth(method = "lm") +
+  geom_point() +
+  facet_wrap(tmid_bin ~ species, ncol = 2) +
+  theme_bw()

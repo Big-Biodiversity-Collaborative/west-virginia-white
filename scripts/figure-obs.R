@@ -3,6 +3,9 @@
 # jcoliver@arizona.edu
 # 2023-03-06
 
+# TODO: Consider adding temperature information in here, perhaps faceting 
+# by tmid_bins on y-axis of facet grid
+
 library(terra)   # To use growing degree day raster for base map
 library(ggplot2)
 library(dplyr)

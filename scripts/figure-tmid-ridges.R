@@ -41,6 +41,10 @@ all_obs <- all_obs %>%
   filter(!is.na(tmin) & !is.na(tmax)) %>%
   mutate(tmid = (tmin + tmax)/2) # mean function doesn't work
 
+# Late summer and fall observations are not relevant
+all_obs <- all_obs %>%
+  filter(month <= 7)
+
 ################################################################################
 # Data preparation for ridge plots
 # Three bins for three different ridge plots
