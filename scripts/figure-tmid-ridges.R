@@ -7,6 +7,7 @@ library(dplyr)
 library(ggplot2)
 library(ggridges)  # Ridge plots
 library(tidyr)
+library(ggpubr)    # Single, multi-pane plot
 
 # Read in filtered data
 all_obs <- read.csv(file = "data/filtered-obs.csv")
@@ -97,11 +98,15 @@ low_tmid_plot <- low_tmid %>%
   geom_density_ridges(alpha = 0.5) +
   scale_fill_manual(values = c("#c2a5cf", "#a6dba0")) +
   xlim(c(50, NA)) +
-  theme_bw() +
+  theme_bw()
+
+# Add title only to version that is standalone  
+low_tmid_single <- low_tmid_plot +
   labs(title = "Low Temperature", x = "Julian day", y = "Year")
-low_tmid_plot
+
+low_tmid_single
 ggsave(filename = "output/figure-2a.png",
-       plot = low_tmid_plot)
+       plot = low_tmid_single)
 
 medium_tmid_plot <- medium_tmid %>% 
   mutate(year = factor(year, levels = rev(sort(unique(year))))) %>%
@@ -109,11 +114,14 @@ medium_tmid_plot <- medium_tmid %>%
   geom_density_ridges(alpha = 0.5) +
   scale_fill_manual(values = c("#c2a5cf", "#a6dba0")) +
   xlim(c(50, NA)) +
-  theme_bw() +
+  theme_bw()
+
+medium_tmid_single <- medium_tmid_plot +
   labs(title = "Medium Temperature", x = "Julian day", y = "Year")
-medium_tmid_plot
+
+medium_tmid_single
 ggsave(filename = "output/figure-2b.png",
-       plot = medium_tmid_plot)
+       plot = medium_tmid_single)
 
 high_tmid_plot <- high_tmid %>% 
   mutate(year = factor(year, levels = rev(sort(unique(year))))) %>%
@@ -121,8 +129,36 @@ high_tmid_plot <- high_tmid %>%
   geom_density_ridges(alpha = 0.5) +
   scale_fill_manual(values = c("#c2a5cf", "#a6dba0")) +
   xlim(c(50, NA)) +
-  theme_bw() +
+  theme_bw()
+
+high_tmid_single <- high_tmid_plot +
   labs(title = "High Temperature", x = "Julian day", y = "Year")
-high_tmid_plot
+
+high_tmid_single
 ggsave(filename = "output/figure-2c.png",
-       plot = high_tmid_plot)
+       plot = high_tmid_single)
+
+# Multi-panel plot of the three ridge plots
+# To align with figure three, low is at top
+tmid_labels <- c(low = "Low temperature", 
+                 medium = "Medium temperature", 
+                 high = "High temperature")
+
+all_tmid_plot <- all_obs %>% 
+  mutate(year = factor(year, levels = rev(sort(unique(year))))) %>%
+  mutate(tmid_bin = factor(tmid_bin, levels = c("low", "medium", "high"))) %>%
+  ggplot(mapping = aes(x = julian_day, y = factor(year), fill = organism)) +
+  geom_density_ridges(alpha = 0.75, size = 0.1) +
+  scale_fill_manual(values = c("#c2a5cf", "#a6dba0")) +
+  xlim(c(50, NA)) +
+  labs(x = "Julian day", y = "Year") +
+  theme_bw() +
+  facet_wrap(~ tmid_bin, ncol = 3, scales = "free_x",
+             labeller = labeller(tmid_bin = tmid_labels))
+
+all_tmid_plot
+ggsave(filename = "output/figure-2.png",
+       plot = all_tmid_plot,
+       height = 4,
+       width = 6.5,
+       units = "in")
